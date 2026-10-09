@@ -1,0 +1,54 @@
+== php:5.6-cli
+PASS 1a gpt-3.5-turbo -> gpt-5.6-terra
+PASS 1b reasoning_effort none after swap from non-reasoning model
+PASS 1c functions converted to tools
+PASS 1d function_call converted to named tool_choice
+PASS 1e deprecated keys removed
+PASS 2a temperature dropped for gpt-5.6-terra by default
+PASS 2b unrelated keys kept
+PASS 3a gpt-5-mini unchanged
+PASS 3b no reasoning_effort injected when no swap happened
+PASS 3c response_format and max_tokens untouched (renamed later by existing code)
+PASS 4a o4-mini -> gpt-5.6-terra
+PASS 4b no reasoning_effort forced for o-series source
+PASS 5a empty map keeps gpt-3.5-turbo
+PASS 5b temperature kept for non-reasoning model
+PASS 5c no reasoning_effort for non-reasoning model
+PASS 5d tools conversion independent of swap
+PASS 6 keep_sampling_params=true keeps temperature
+PASS 7 swap effort filter "" omits reasoning_effort
+PASS 8 explicit reasoning_effort preserved
+PASS 9a key validation model defaults to gpt-5.6-terra
+PASS 9b gpt-5.6-terra supports effort none
+PASS 9c gpt-5-mini not treated as supporting none
+PASS 9d key validation model filterable
+PASS 10 existing tools left alone
+
+24 checks, 0 failed (PHP 5.6.40)
+== php:8.3-cli
+PASS 1a gpt-3.5-turbo -> gpt-5.6-terra
+PASS 1b reasoning_effort none after swap from non-reasoning model
+PASS 1c functions converted to tools
+PASS 1d function_call converted to named tool_choice
+PASS 1e deprecated keys removed
+PASS 2a temperature dropped for gpt-5.6-terra by default
+PASS 2b unrelated keys kept
+PASS 3a gpt-5-mini unchanged
+PASS 3b no reasoning_effort injected when no swap happened
+PASS 3c response_format and max_tokens untouched (renamed later by existing code)
+PASS 4a o4-mini -> gpt-5.6-terra
+PASS 4b no reasoning_effort forced for o-series source
+PASS 5a empty map keeps gpt-3.5-turbo
+PASS 5b temperature kept for non-reasoning model
+PASS 5c no reasoning_effort for non-reasoning model
+PASS 5d tools conversion independent of swap
+PASS 6 keep_sampling_params=true keeps temperature
+PASS 7 swap effort filter "" omits reasoning_effort
+PASS 8 explicit reasoning_effort preserved
+PASS 9a key validation model defaults to gpt-5.6-terra
+PASS 9b gpt-5.6-terra supports effort none
+PASS 9c gpt-5-mini not treated as supporting none
+PASS 9d key validation model filterable
+PASS 10 existing tools left alone
+
+24 checks, 0 failed (PHP 8.3.35)

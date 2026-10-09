@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- Produced 2026-10-09 (AI-assisted, human-reviewed). Source of truth: launch/OFFER_SPEC.md (version 1, 2026-10-09 12:35 EDT).
+     Model IDs, dates and replacements read live on 2026-10-09 from https://developers.openai.com/api/docs/deprecations
+     and https://platform.claude.com/docs/en/about-claude/model-deprecations. WordPress figures: research/wp-scan/FINDINGS.md (own scan, 2026-10-09).
+     Placeholders in double curly braces must be replaced before publishing: see README.md.
+     QA revision 2026-10-09 (AI agent, QA reviewer): public Payment Link buttons removed (launch-checklist.md step 5:
+     links are emailed with the delivery or after the scope is agreed, never published); checker description updated for
+     IDs OpenAI already shut down (2026-03-26, 2026-09-28), re-read live from the deprecations page ~13:32 EDT. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Model Sunset Desk: move off the OpenAI models that shut down on 23 Oct 2026</title>
+<meta name="description" content="OpenAI shuts down gpt-4, gpt-3.5-turbo, o1, o4-mini, gpt-image-1 and more on 23 October 2026. Free in-browser exposure check, then a fixed-price swap with a before/after report and a pull request.">
+<link rel="canonical" href="https://orkhan103.github.io/model-sunset-desk/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/noto-serif-display-bold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/jetbrains-mono-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
+<script src="checker.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#check">Skip to the free checker</a>
+
+<header class="masthead">
+  <div class="wrap masthead__row">
+    <a class="wordmark" href="#top" aria-label="Model Sunset Desk, top of page">
+      <svg class="wordmark__mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M6 21a10 10 0 0 1 20 0" fill="none" stroke="#18202B" stroke-width="2.4"/><path d="M2 21h28" stroke="#18202B" stroke-width="2.4"/><path d="M4 27.5 28 14" stroke="#CC172D" stroke-width="2.6" stroke-linecap="round"/></svg>
+      <span>Model Sunset Desk</span>
+    </a>
+    <nav class="masthead__nav" aria-label="Sections">
+      <a href="#check">Checker</a>
+      <a href="#breaks">What breaks</a>
+      <a href="#offers">Prices</a>
+      <a href="#proof">Evidence</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="wrap hero__grid">
+    <div class="hero__copy">
+      <p class="eyebrow eyebrow--red">OpenAI API shutdown &middot; Friday 23 October 2026</p>
+      <h1 id="hero-title" class="hero__title">On 23 October, OpenAI shuts down <span class="id struck">gpt-4</span>, <span class="id struck">gpt-3.5-turbo</span>, <span class="id struck">o1</span>, <span class="id struck">o4-mini</span> and <span class="id struck">gpt-image-1</span>.</h1>
+      <p class="lede">The same list also has gpt-4-turbo, gpt-4.1-nano, o1-pro, o3-mini, the gpt-4o-2024-05-13 snapshot and fine-tuned models built on retiring bases. Requests that name a shut-down model fail outright. Changing the name takes a minute. The real work is finding out what the replacement does differently with your prompts.</p>
+      <p class="lede lede--strong">We make the swap, test it on your own inputs, and hand you a pull request with a before/after report.</p>
+      <div class="cta-row">
+        <a class="btn btn--ink" href="#check">Check your code free</a>
+        <a class="btn btn--line" href="#offers">See prices</a>
+      </div>
+      <p class="source">Source: <a href="https://developers.openai.com/api/docs/deprecations">OpenAI API deprecations page</a>, entry announced 22 Apr 2026, read 9 Oct 2026. Plain <code>gpt-4o</code>, <code>gpt-4o-mini</code>, <code>gpt-4.1</code> and <code>gpt-4.1-mini</code> are not on the 23 Oct list.</p>
+    </div>
+
+    <figure class="sheet hero__sheet">
+      <div class="sheet__head" aria-hidden="true"><span>support_bot.py</span><span>marked up</span></div>
+      <div class="code" role="img" aria-label="Illustrative Python call: the model name gpt-3.5-turbo is struck through and annotated with its replacement gpt-5.6-terra; the response format and max tokens lines are annotated as things to re-test after the swap.">
+        <div class="ln"><span class="n">41</span><code>reply = client.chat.completions.create(</code></div>
+        <div class="ln ln--hit"><span class="n">42</span><code>    model=<span class="struck">"gpt-3.5-turbo"</span>,</code><span class="note note--red">shuts down 23 Oct &middot; use gpt-5.6-terra</span></div>
+        <div class="ln"><span class="n">43</span><code>    messages=history,</code></div>
+        <div class="ln ln--warn"><span class="n">44</span><code>    response_format={"type": "json_object"},</code><span class="note note--blue">re-test the JSON shape after the swap</span></div>
+        <div class="ln ln--warn"><span class="n">45</span><code>    max_tokens=400,</code><span class="note note--blue">check the parameter still applies; compare length and cost</span></div>
+        <div class="ln"><span class="n">46</span><code>)</code></div>
+      </div>
+      <figcaption class="sheet__foot">Illustrative example. Line 42 breaks loudly on 23 Oct. Lines 44 and 45 can change quietly after the swap.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="check" class="section section--check" aria-labelledby="check-title">
+  <div class="wrap">
+    <header class="section__head">
+      <p class="eyebrow">Free exposure check &middot; $0</p>
+      <h2 id="check-title">Paste code, a config file or a workflow export. See what retires, and when.</h2>
+    </header>
+
+    <div class="checker">
+      <div class="sheet checker__sheet">
+        <div class="sheet__head"><span>exposure check</span><span>runs in this tab &middot; nothing is uploaded</span></div>
+        <div class="checker__body">
+          <label class="checker__label" for="checker-input">Your code, config, <code>.env</code> or n8n / Make / Zapier JSON</label>
+          <textarea id="checker-input" class="checker__input" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder='model="gpt-3.5-turbo"  (or paste a whole file or workflow export)'></textarea>
+          <div class="checker__actions">
+            <button id="checker-run" class="btn btn--ink" type="button">Check</button>
+            <button id="checker-example" class="btn btn--line" type="button">Load an example</button>
+            <button id="checker-clear" class="btn btn--quiet" type="button">Clear</button>
+            <span class="kbd-hint">or press Ctrl + Enter</span>
+          </div>
+          <div id="checker-results" class="results" aria-live="polite"></div>
+          <noscript><p class="results__msg">The checker needs JavaScript. It runs only in your browser.</p></noscript>
+        </div>
+      </div>
+
+      <aside class="checker__aside" aria-label="How the checker works">
+        <h3>What it flags</h3>
+        <p>Every model ID on OpenAI&rsquo;s 23 Oct 2026 list, with the recommended replacement and date. Fine-tuned models (<code>ft:&hellip;</code>) built on a retiring base. IDs OpenAI has already shut down, such as <code>babbage-002</code>, <code>davinci-002</code> and <code>gpt-3.5-turbo-instruct</code> (28 Sep 2026) or <code>gpt-4-turbo-preview</code> (26 Mar 2026), because calls to them fail now. Items with later dates: Evals and reusable prompts (30 Nov), older image models (1 Dec), dated GPT-5 and o3 snapshots (11 Dec), and Anthropic&rsquo;s <code>claude-sonnet-4-5-20250929</code> (30 Nov).</p>
+        <h3>What it leaves alone</h3>
+        <p>IDs that are not on those lists, such as <code>gpt-4o</code>, <code>gpt-4o-mini</code>, <code>gpt-4.1</code>, <code>gpt-4.1-mini</code>, <code>o3</code> and <code>gpt-5</code>. It matches whole IDs only, so <code>gpt-4</code> never matches inside <code>gpt-4o</code> or <code>gpt-4.1</code>.</p>
+        <h3>What it can&rsquo;t see</h3>
+        <p>IDs assembled at runtime, kept in a database or chosen in a vendor dashboard. Azure OpenAI, Amazon Bedrock and Google Vertex set their own retirement dates, so check those platforms separately.</p>
+        <h3>Privacy</h3>
+        <p>The check is one plain JavaScript file, <a href="checker.js">checker.js</a>, running in this tab. It contains no network code, and this page&rsquo;s Content-Security-Policy blocks scripts from opening connections (<code>connect-src 'none'</code>). Nothing you paste leaves your browser.</p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section id="breaks" class="section" aria-labelledby="breaks-title">
+  <div class="wrap">
+    <header class="section__head">
+      <p class="eyebrow">What breaks and what silently changes</p>
+      <h2 id="breaks-title">The shutdown is loud. The swap is quiet.</h2>
+    </header>
+
+    <div class="split">
+      <div class="split__col">
+        <h3 class="split__title"><span class="tag tag--red">Breaks on 23 Oct</span></h3>
+        <p>Any request that names one of these IDs fails. The error is obvious, and the feature stays down until someone ships a change.</p>
+        <div class="tablewrap">
+          <table class="ids">
+            <caption class="visually-hidden">Model IDs that OpenAI shuts down on 23 October 2026 and the replacement OpenAI recommends</caption>
+            <thead><tr><th scope="col">Shuts down 23 Oct 2026</th><th scope="col">OpenAI recommends</th></tr></thead>
+            <tbody>
+              <tr><td><span class="id struck">gpt-3.5-turbo</span> <span class="alias"><span>-0125,</span> <span>-completions</span></span></td><td class="repl">gpt-5.6-terra</td></tr>
+              <tr><td><span class="id struck">gpt-4</span> <span class="alias"><span>-0613,</span> <span>-completions,</span> <span>-0613-completions</span></span></td><td class="repl">gpt-5.6-sol</td></tr>
+              <tr><td><span class="id struck">gpt-4-turbo</span> <span class="alias"><span>-2024-04-09,</span> <span>-completions</span></span></td><td class="repl">gpt-5.6-sol</td></tr>
+              <tr><td><span class="id struck">gpt-4-1106-preview</span></td><td class="repl">gpt-5.6-sol</td></tr>
+              <tr><td><span class="id struck">gpt-4o-2024-05-13</span> <span class="alias">snapshot only</span></td><td class="repl">gpt-5.6-sol</td></tr>
+              <tr><td><span class="id struck">gpt-4.1-nano</span> <span class="alias"><span>-2025-04-14</span></span></td><td class="repl">gpt-5.6-luna</td></tr>
+              <tr><td><span class="id struck">o1</span> <span class="alias"><span>-2024-12-17</span></span></td><td class="repl">gpt-5.6-sol</td></tr>
+              <tr><td><span class="id struck">o1-pro</span> <span class="alias"><span>-2025-03-19</span></span></td><td class="repl">gpt-5.6-sol <span class="alias">reasoning.mode: pro</span></td></tr>
+              <tr><td><span class="id struck">o3-mini</span> <span class="alias"><span>-2025-01-31</span></span></td><td class="repl">gpt-5.6-sol</td></tr>
+              <tr><td><span class="id struck">o4-mini</span> <span class="alias"><span>-2025-04-16</span></span></td><td class="repl">gpt-5.6-terra</td></tr>
+              <tr><td><span class="id struck">gpt-image-1</span></td><td class="repl">gpt-image-2.5-sunburst <span class="alias">or</span> gpt-image-2.5-flare</td></tr>
+              <tr><td><span class="id struck">ft-gpt-3.5-turbo</span> <span class="alias"><span>ft-o4-mini-2025-04-16,</span> <span>ft-babbage-002,</span> <span>ft-davinci-002</span></span></td><td class="repl">gpt-5.6-terra</td></tr>
+              <tr><td><span class="id struck">ft-gpt-4</span></td><td class="repl">gpt-5.6-sol</td></tr>
+              <tr><td><span class="id struck">ft-gpt-4.1-nano-2025-04-14</span></td><td class="repl">gpt-5.6-luna</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="source">Source: <a href="https://developers.openai.com/api/docs/deprecations">OpenAI API deprecations</a>, 2026-04-22 entry, read 9 Oct 2026.</p>
+      </div>
+
+      <div class="split__col">
+        <h3 class="split__title"><span class="tag tag--blue">Can change after the swap</span></h3>
+        <p>The replacement accepts the same request and answers differently. Nothing errors, so nothing alerts you. These are the things we measure:</p>
+        <dl class="drift">
+          <dt>Output format</dt><dd>Markdown where your UI expects plain text, or the reverse.</dd>
+          <dt>Length</dt><dd>Longer or shorter answers move your layout and your token bill.</dd>
+          <dt>Tone</dt><dd>A support reply that sounded like your company may stop sounding like it.</dd>
+          <dt>Refusals</dt><dd>Requests the old model handled may be declined, or the other way round.</dd>
+          <dt>JSON shape</dt><dd>A missing key, a renamed field or prose around the JSON breaks the parser downstream.</dd>
+          <dt>Latency</dt><dd>Response time can move enough to trip timeouts in webhooks and workflow steps.</dd>
+          <dt>Cost</dt><dd>Per-token prices and output length together set the new monthly bill.</dd>
+        </dl>
+
+        <div class="callout">
+          <h4>Fine-tuned on a retiring base?</h4>
+          <p>OpenAI&rsquo;s fine-tuning guide says fine-tuned models &ldquo;will remain available for inference until their base models are deprecated.&rdquo; The same guide lists no GPT-5 or GPT-5.6 model for fine-tuning, and says OpenAI &ldquo;is winding down the fine-tuning platform.&rdquo; So you may not be able to simply retrain on the replacement. The behaviour has to be rebuilt with structured prompting, few-shot examples and output schemas, then measured against your held-out data.</p>
+          <p class="source">Source: <a href="https://developers.openai.com/api/docs/guides/fine-tuning">OpenAI fine-tuning guide</a>, read 9 Oct 2026.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="later">
+      <h3 class="later__title">Later dates worth knowing</h3>
+      <div class="tablewrap">
+        <table class="later__table">
+          <caption class="visually-hidden">Retirements after 23 October 2026</caption>
+          <thead><tr><th scope="col">Date</th><th scope="col">What changes</th><th scope="col">Recommended path</th><th scope="col">Source</th></tr></thead>
+          <tbody>
+            <tr><td class="date">31 Oct 2026</td><td>Existing OpenAI evals become read-only</td><td>OpenAI links a guide to moving to Promptfoo</td><td><a href="https://developers.openai.com/api/docs/deprecations">OpenAI</a></td></tr>
+            <tr><td class="date">30 Nov 2026</td><td>OpenAI Evals, Agent Builder and reusable prompts (<code>v1/prompts</code>) shut down</td><td>Agents SDK or ChatGPT Workspace Agents; prompt content moves into your code</td><td><a href="https://developers.openai.com/api/docs/deprecations">OpenAI</a></td></tr>
+            <tr><td class="date">30 Nov 2026</td><td><code>claude-sonnet-4-5-20250929</code> retires</td><td><code>claude-sonnet-5-5</code></td><td><a href="https://platform.claude.com/docs/en/about-claude/model-deprecations">Anthropic</a></td></tr>
+            <tr><td class="date">1 Dec 2026</td><td><code>gpt-image-1-mini</code>, <code>gpt-image-1.5</code>, <code>chatgpt-image-latest</code></td><td><code>gpt-image-2.5-sunburst</code> or <code>gpt-image-2.5-flare</code></td><td><a href="https://developers.openai.com/api/docs/deprecations">OpenAI</a></td></tr>
+            <tr><td class="date">11 Dec 2026</td><td>Dated snapshots <code>gpt-5-2025-08-07</code>, <code>gpt-5-mini-2025-08-07</code>, <code>gpt-5-nano-2025-08-07</code>, <code>gpt-5-pro-2025-10-06</code>, <code>o3-2025-04-16</code>, <code>o3-pro-2025-06-10</code></td><td><code>gpt-5.6-sol</code>, <code>-terra</code> or <code>-luna</code> by size</td><td><a href="https://developers.openai.com/api/docs/deprecations">OpenAI</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="source">All read 9 Oct 2026. Undated aliases such as plain <code>o3</code> and <code>gpt-5</code> are not on the 11 Dec list.</p>
+    </div>
+  </div>
+</section>
+
+<section id="offers" class="section section--offers" aria-labelledby="offers-title">
+  <div class="wrap">
+    <header class="section__head">
+      <p class="eyebrow">Three fixed prices &middot; USD</p>
+      <h2 id="offers-title">Pick the job. The price and the payment terms are on the page.</h2>
+      <p class="section__intro">Every job starts with one paragraph of scope and an acceptance test, agreed by email before any work begins. We take work with a 23 Oct deadline until our calendar is full, and we will say so before you pay.</p>
+    </header>
+
+    <div class="orders">
+      <article class="sheet order" aria-labelledby="o1-title">
+        <div class="order__top">
+          <h3 id="o1-title" class="order__name">Swap &amp; Verify</h3>
+          <p class="order__price"><span class="order__amount">$290</span><span class="order__unit">per repo, or per bundle of up to 3 n8n / Make / Zapier workflows</span></p>
+        </div>
+        <ul class="order__list">
+          <li>Retiring IDs replaced with OpenAI&rsquo;s recommended model</li>
+          <li>Parameter and response-shape differences fixed</li>
+          <li>30-case before/after regression on your own inputs, run with your staging API key</li>
+          <li>Pull request (or fixed workflow JSON) plus a one-page quality and cost report</li>
+        </ul>
+        <dl class="order__terms">
+          <dt>Payment</dt><dd><strong>Pay on delivery.</strong> The Payment Link comes with the pull request and report. If the delivery does not pass your review, you do not pay.</dd>
+          <dt>Delivery</dt><dd>Within 48 hours of receiving access and a staging key, weekends included.</dd>
+        </dl>
+        <div class="order__actions">
+          <a class="btn btn--ink" href="mailto:hello@modelsunsetdesk.com?subject=Swap%20%26%20Verify%20request">Request Swap &amp; Verify</a>
+          <p class="paylink">No payment up front. The $290 Payment Link is emailed with the delivery.</p>
+        </div>
+      </article>
+
+      <article class="sheet order" aria-labelledby="o2-title">
+        <div class="order__top">
+          <h3 id="o2-title" class="order__name">Fine-tune Replacement</h3>
+          <p class="order__price"><span class="order__amount">$2,500</span><span class="order__unit">for one retiring fine-tuned model</span></p>
+        </div>
+        <ul class="order__list">
+          <li>Your fine-tune&rsquo;s behaviour rebuilt on the recommended base from your training JSONL: structured prompting, few-shot examples, output schemas</li>
+          <li>Held-out comparison report: accuracy, format and cost</li>
+          <li>Integration pull request</li>
+        </ul>
+        <dl class="order__terms">
+          <dt>Payment</dt><dd>$1,250 deposit to start, $1,250 on delivery of the comparison report.</dd>
+          <dt>Delivery</dt><dd>3 to 5 business days.</dd>
+        </dl>
+        <div class="order__actions">
+          <a class="btn btn--ink" href="mailto:hello@modelsunsetdesk.com?subject=Fine-tune%20Replacement%20request">Ask about your fine-tune</a>
+          <p class="paylink">The deposit link is emailed after the scope is agreed; the balance link comes with the report.</p>
+        </div>
+      </article>
+
+      <article class="sheet order" aria-labelledby="o3-title">
+        <div class="order__top">
+          <h3 id="o3-title" class="order__name">Agency Pack <span class="order__tag">white-label</span></h3>
+          <p class="order__price"><span class="order__amount">$990</span><span class="order__unit">for up to 5 client integrations</span></p>
+        </div>
+        <ul class="order__list">
+          <li>Swap &amp; Verify for each client integration</li>
+          <li>Delivered under your agency&rsquo;s brand</li>
+          <li>NDA on request</li>
+        </ul>
+        <dl class="order__terms">
+          <dt>Payment</dt><dd>$495 to start, $495 on delivery.</dd>
+          <dt>Delivery</dt><dd>3 business days.</dd>
+        </dl>
+        <div class="order__actions">
+          <a class="btn btn--ink" href="mailto:hello@modelsunsetdesk.com?subject=Agency%20Pack%20request">Request the Agency Pack</a>
+          <p class="paylink">The deposit link is emailed after the scope is agreed; the balance link comes with the delivery.</p>
+        </div>
+      </article>
+    </div>
+
+    <div class="offers__foot">
+      <p><strong>Free:</strong> the <a href="#check">exposure checker</a> above, $0, instant, nothing leaves your browser.</p>
+      <p><strong>Also available</strong> (quoted per job): moving off Agent Builder or reusable prompts (<code>v1/prompts</code>) before 30 Nov, and migrating from <code>claude-sonnet-4-5</code> before 30 Nov.</p>
+      <p>Payment is by Stripe Payment Link (card). Prices are in USD. Full <a href="terms.html">terms</a>.</p>
+    </div>
+  </div>
+</section>
+
+<section id="proof" class="section" aria-labelledby="proof-title">
+  <div class="wrap">
+    <header class="section__head">
+      <p class="eyebrow">Evidence, not testimonials</p>
+      <h2 id="proof-title">We scanned the WordPress plugin directory for retiring model IDs.</h2>
+    </header>
+
+    <div class="proof">
+      <div class="sheet scanlog">
+        <div class="sheet__head"><span>scan record</span><span>9 Oct 2026</span></div>
+        <dl class="scanlog__rows">
+          <dt>source</dt><dd>WordPress.org plugins API, searches for &ldquo;openai&rdquo;, &ldquo;chatgpt&rdquo;, &ldquo;gpt&rdquo;, &ldquo;ai content&rdquo;, &ldquo;ai chatbot&rdquo;</dd>
+          <dt>found</dt><dd>1,968 unique plugins</dd>
+          <dt>kept</dt><dd>the 250 with the most active installs</dd>
+          <dt>method</dt><dd>latest stable zip, text search for exact model IDs on the 23 Oct list; nothing was executed</dd>
+          <dt class="scanlog__key">result</dt><dd class="scanlog__result"><strong>38 of 250</strong> reference at least one retiring model ID</dd>
+          <dt class="scanlog__key">installs</dt><dd class="scanlog__result">about <strong>3,049,000</strong> active installs across those 38</dd>
+        </dl>
+        <p class="scanlog__fine">A reference can be a hard-coded default, which breaks on 23 Oct, or an option in a dropdown, which is cosmetic. We confirmed hard-coded defaults by hand in the three plugins below.</p>
+      </div>
+
+      <div class="proof__examples">
+        <h3 class="proof__subtitle">Hard-coded defaults, confirmed by hand</h3>
+        <ol class="evidence">
+          <li class="evidence__item">
+            <p class="evidence__meta"><strong>otter-blocks</strong> (Themeisle) &middot; 300,000+ active installs</p>
+            <p class="evidence__path">inc/server/class-prompt-server.php:144</p>
+            <p class="evidence__code"><code>'model'    =&gt; <span class="struck">'gpt-3.5-turbo'</span>,</code></p>
+            <p class="evidence__note">&rarr; gpt-5.6-terra</p>
+          </li>
+          <li class="evidence__item">
+            <p class="evidence__meta"><strong>essential-blocks</strong> (WPDeveloper) &middot; 200,000+ active installs</p>
+            <p class="evidence__path">includes/Integrations/AI/OpenAI.php:46</p>
+            <p class="evidence__code"><code>private $model = <span class="struck">'gpt-4.1-nano'</span></code></p>
+            <p class="evidence__note">&rarr; gpt-5.6-luna &middot; image default <code>gpt-image-1</code> too (AI.php:107, OpenAI.php:353)</p>
+          </li>
+          <li class="evidence__item">
+            <p class="evidence__meta"><strong>the-post-grid</strong> (RadiusTheme) &middot; 100,000+ active installs</p>
+            <p class="evidence__path">app/Controllers/Api/AIIntegration.php:61</p>
+            <p class="evidence__code evidence__code--prose">Default model is <code><span class="struck">gpt-3.5-turbo</span></code></p>
+            <p class="evidence__note">&rarr; gpt-5.6-terra &middot; its allowed-model list still includes the retired <code>text-davinci-002/003</code></p>
+          </li>
+        </ol>
+        <p class="source">Source: our own scan, 9 Oct 2026. Install counts are WordPress.org&rsquo;s published figures. These are open-source plugins whose vendors can ship their own fix, and may already have by the time you read this. We cite them to show how common hard-coded model IDs are. They are not our clients.</p>
+      </div>
+    </div>
+
+    <div class="samples">
+      <h3 class="proof__subtitle">Sample deliverables you can read now</h3>
+      <ul class="samples__list">
+        <li class="sheet sample">
+          <a class="sample__link" href="samples/otter-blocks/report.html">Sample Swap &amp; Verify report: otter-blocks</a>
+          <p>The patch for line 144, the regression harness, the test cases and the parameter-diff analysis. Live before/after numbers need an API key. We did not make paid API calls for this sample (budget $0), and the report says so.</p>
+        </li>
+        <li class="sheet sample">
+          <a class="sample__link" href="samples/n8n/README.md">Sample n8n workflow fix</a>
+          <p>A workflow pinned to <code>gpt-3.5-turbo</code>, the fixed export, and notes on what changed and why.</p>
+        </li>
+        <li class="sheet sample">
+          <a class="sample__link" href="samples/fine-tune/method.md">Fine-tune replacement method</a>
+          <p>How we rebuild a fine-tune&rsquo;s behaviour on the replacement model, and the eval harness design that measures it.</p>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="section" aria-labelledby="how-title">
+  <div class="wrap">
+    <header class="section__head">
+      <p class="eyebrow">How it works</p>
+      <h2 id="how-title">Four steps. You never give us production access.</h2>
+    </header>
+    <ol class="steps">
+      <li class="step">
+        <p class="step__n">Step 1</p>
+        <h3>Scope, in writing</h3>
+        <p>Tell us what calls the retiring model. We reply with one paragraph of scope and an acceptance test before any work starts. If our calendar is full, we say so before you pay.</p>
+      </li>
+      <li class="step">
+        <p class="step__n">Step 2</p>
+        <h3>Access without production</h3>
+        <p>Give us access to open a pull request, or send the workflow export. Create a staging API key for this job and revoke it when we finish. We never ask for passwords.</p>
+      </li>
+      <li class="step">
+        <p class="step__n">Step 3</p>
+        <h3>Swap and measure</h3>
+        <p>We switch to OpenAI&rsquo;s recommended replacement, fix parameter and response-shape differences, then run your own inputs through the old and new models side by side.</p>
+      </li>
+      <li class="step">
+        <p class="step__n">Step 4</p>
+        <h3>Pull request and report</h3>
+        <p>You get the pull request (or fixed workflow JSON) and a one-page report on quality, format and cost. You review it and merge it yourself.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section id="who" class="section" aria-labelledby="who-title">
+  <div class="wrap who">
+    <div class="who__text">
+      <p class="eyebrow">Who we are</p>
+      <h2 id="who-title">One operator and a set of AI coding agents.</h2>
+      <p>Model Sunset Desk is one person, Orkhan Karimov, working with AI coding agents. The agents search the code, draft the patch and run the comparisons. Orkhan Karimov reviews every change before it reaches you. We call that AI-assisted, human-reviewed. It is not a team and not an agency.</p>
+      <p>This is a new business. There are no client logos or testimonials on this page because there are no past clients yet. What you can judge is the work shown here: the checker, the scan and the samples.</p>
+    </div>
+    <table class="titleblock">
+      <caption>How every delivery is made</caption>
+      <tbody>
+        <tr><th scope="row">Drawn</th><td>AI coding agents</td></tr>
+        <tr><th scope="row">Checked</th><td>Orkhan Karimov, every change, before delivery</td></tr>
+        <tr><th scope="row">Delivered as</th><td>Pull request or fixed workflow export</td></tr>
+        <tr><th scope="row">Access</th><td>Staging API key you revoke afterwards. No production access, no passwords.</td></tr>
+        <tr><th scope="row">Your data</th><td>Used only for the job. Deleted within 7 days of delivery.</td></tr>
+        <tr><th scope="row">Rev.</th><td>1 &middot; 9 Oct 2026</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="faq" class="section" aria-labelledby="faq-title">
+  <div class="wrap faq">
+    <header class="section__head">
+      <p class="eyebrow">Questions</p>
+      <h2 id="faq-title">Frequently asked</h2>
+    </header>
+    <div class="faq__list">
+      <details>
+        <summary>Is plain <code>gpt-4o</code> affected on 23 Oct?</summary>
+        <p>No. Only the dated snapshot <code>gpt-4o-2024-05-13</code> is on the 23 Oct list. Plain <code>gpt-4o</code>, <code>gpt-4o-mini</code>, <code>gpt-4.1</code> and <code>gpt-4.1-mini</code> are not on it. <code>gpt-4.1-nano</code> is. Source: <a href="https://developers.openai.com/api/docs/deprecations">OpenAI deprecations page</a>, read 9 Oct 2026.</p>
+      </details>
+      <details>
+        <summary>Does the checker send my code anywhere?</summary>
+        <p>No. It is plain JavaScript in <a href="checker.js">checker.js</a>, running in your tab. It contains no network code, and the page&rsquo;s Content-Security-Policy (<code>connect-src 'none'</code>) blocks scripts from making connections. You can disconnect from the internet after the page loads and it still works.</p>
+      </details>
+      <details>
+        <summary>Why not just change the model name myself?</summary>
+        <p>You can, and for some projects that is enough. The list and the checker on this page are free. What a rename does not tell you is whether the new model still returns the format, length, tone and JSON your code expects. If you have time to run your own before/after comparison, do. If you don&rsquo;t, that comparison is what we sell.</p>
+      </details>
+      <details>
+        <summary>Do you guarantee the new model behaves the same?</summary>
+        <p>No. Nobody can promise identical output from a different model. We promise a measured comparison on your own inputs and a pull request. We do not guarantee output parity, quality, uptime, revenue or compliance.</p>
+      </details>
+      <details>
+        <summary>What access do you need?</summary>
+        <p>Enough to open a pull request in your repository (or a workflow export you import yourself), plus a staging API key that you create for the job and revoke afterwards. We do not take production access or passwords.</p>
+      </details>
+      <details>
+        <summary>We fine-tuned a model on a retiring base. Can&rsquo;t we just retrain on the replacement?</summary>
+        <p>Maybe not. OpenAI&rsquo;s fine-tuning guide lists no GPT-5 or GPT-5.6 model for fine-tuning and says the fine-tuning platform is being wound down (read 9 Oct 2026). The Fine-tune Replacement offer rebuilds the behaviour with structured prompting, few-shot examples and output schemas, then compares it on held-out data from your own training set.</p>
+      </details>
+      <details>
+        <summary>Can you finish before 23 Oct?</summary>
+        <p>Swap &amp; Verify is delivered within 48 hours of receiving access and a staging key, weekends included. The Agency Pack takes 3 business days and Fine-tune Replacement 3 to 5. We take work with a 23 Oct deadline until our calendar is full, and we will say so before you pay.</p>
+      </details>
+      <details>
+        <summary>What about Agent Builder, reusable prompts or Claude Sonnet 4.5?</summary>
+        <p>Those have later dates (30 Nov 2026). We can quote a move off Agent Builder or <code>v1/prompts</code>, or a migration from <code>claude-sonnet-4-5</code>, separately. They are not part of the fixed prices above.</p>
+      </details>
+      <details>
+        <summary>Do you have clients or reviews?</summary>
+        <p>Not yet. This is a new business, so there are no logos or testimonials to show. The scan, the samples and the checker are there so you can judge the work directly.</p>
+      </details>
+      <details>
+        <summary>How does payment work?</summary>
+        <p>By Stripe Payment Link, by card, in USD. Swap &amp; Verify is paid only after you have reviewed the delivery. Fine-tune Replacement and the Agency Pack are half to start and half on delivery. Services to non-residents of Canada are generally zero-rated for GST/HST. See the <a href="terms.html">terms</a> for refunds.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="contact" class="section section--contact" aria-labelledby="contact-title">
+  <div class="wrap contact">
+    <p class="eyebrow">Contact</p>
+    <h2 id="contact-title">Write to <a class="contact__mail" href="mailto:hello@modelsunsetdesk.com">hello@modelsunsetdesk.com</a></h2>
+    <p class="contact__lede">Include what calls the model (repository, workflow or plugin), the IDs the checker found, and your deadline. We reply with a scope paragraph and an acceptance test, or tell you plainly if it is not a fit or our calendar is full.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+  <div class="footer__grid">
+    <div>
+      <p class="footer__name">Model Sunset Desk</p>
+      <p>Operated by Orkhan Karimov<br>Mississauga, ON L5G 1H4, Canada<br><a href="mailto:hello@modelsunsetdesk.com">hello@modelsunsetdesk.com</a></p>
+    </div>
+    <div>
+      <p class="footer__label">Pages</p>
+      <p><a href="terms.html">Terms</a><br><a href="#check">Free checker</a><br><a href="#offers">Prices</a></p>
+    </div>
+    <div>
+      <p class="footer__label">Sources (read 9 Oct 2026)</p>
+      <p><a href="https://developers.openai.com/api/docs/deprecations">OpenAI API deprecations</a><br><a href="https://developers.openai.com/api/docs/guides/fine-tuning">OpenAI fine-tuning guide</a><br><a href="https://platform.claude.com/docs/en/about-claude/model-deprecations">Anthropic model deprecations</a><br>WordPress plugin scan: our own, 9 Oct 2026</p>
+    </div>
+    <p class="footer__fine">Not affiliated with OpenAI or Anthropic. Model names belong to their owners. Dates and replacements can change; check the source pages before you act.</p>
+  </div>
+  </div>
+</footer>
+</body>
+</html>

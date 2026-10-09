@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<!-- Produced 2026-10-09 (AI-assisted, human-reviewed). Model Sunset Desk sample; AI-assisted, human-reviewed. -->
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Swap &amp; Verify sample: Otter Blocks, gpt-3.5-turbo to gpt-5.6-terra</title><style>
+:root{--fg:#1d2330;--muted:#5b6475;--line:#d9dee7;--bg:#ffffff;--soft:#f5f7fa;--accent:#0f5bd8;--warn:#fff6e0;--warnline:#e5b54a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--soft);color:var(--fg);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+main{max-width:1060px;margin:0 auto;padding:40px 44px 64px;background:var(--bg);min-height:100vh;box-shadow:0 0 0 1px var(--line)}
+h1{font-size:28px;line-height:1.25;margin:0 0 12px;letter-spacing:-.01em}
+h2{font-size:21px;margin:40px 0 12px;padding-top:16px;border-top:1px solid var(--line)}
+h3{font-size:17px;margin:26px 0 8px}
+p{margin:10px 0}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+code{font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+pre{background:#0f1520;color:#dbe2ee;border-radius:8px;padding:14px 16px;overflow:auto;tab-size:4;-moz-tab-size:4;font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+pre code{background:none;border:0;padding:0;color:inherit;font:inherit}
+pre .add{color:#7ee2a8}pre .del{color:#ff9a9a}pre .hunk{color:#8ab4ff}pre .meta{color:#c7a6ff}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--warn);border-left:4px solid var(--warnline);border-radius:4px}
+blockquote p{margin:4px 0}
+table{border-collapse:collapse;width:100%;margin:12px 0 18px;font-size:13.5px;display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+th{background:var(--soft);font-weight:600}
+tr:nth-child(even) td{background:#fbfcfd}
+ul,ol{padding-left:24px}li{margin:4px 0}li>ul,li>ol{margin:4px 0 6px}li>p{margin:6px 0}
+footer{margin-top:40px;color:var(--muted);font-size:13px}
+@media print{body{background:#fff}main{box-shadow:none;padding:0}pre{white-space:pre-wrap}}
+</style></head><body><main>
+<h1 id="swap-verify-sample-otter-blocks-gpt-3-5-turbo-to-gpt-5-6-terra">Swap &amp; Verify sample: Otter Blocks, gpt-3.5-turbo to gpt-5.6-terra</h1>
+<p><strong>Model Sunset Desk: public proof sample.</strong> Produced 2026-10-09 (AI-assisted, human-reviewed). AI-assisted, human-reviewed before any client use.</p>
+<p>Subject: Otter Blocks 3.2.7 (Themeisle), a GPL WordPress plugin with 300,000 active installs according to WordPress.org (our scan, <code>research/wp-scan/plugins_retiring_models.csv</code>). Source: <code>downloads.wordpress.org/plugin/otter-blocks.latest-stable.zip</code>, sha256 <code>c59d54bd...71edadc0</code>, downloaded 2026-10-09.</p>
+<blockquote><p><strong>Read this first.</strong> No live API calls were made for this sample (budget $0). The patch is real, applies cleanly, and its new logic is unit-tested on PHP 5.6 and 8.3. The regression harness is real and runs on the client's own OpenAI key. The before/after table further down comes from a <strong>dry run on synthetic mock responses</strong>, included to show what the client report looks like. It contains no measurements of either model. We are not affiliated with Themeisle, have not contacted them, and have not opened an issue or pull request anywhere.</p></blockquote>
+<h2 id="1-executive-summary">1. Executive summary</h2>
+<ul><li><strong>What breaks.</strong> On 23 Oct 2026 OpenAI shuts down <code>gpt-3.5-turbo</code> (OpenAI deprecations page, entry announced 2026-04-22; recommended replacement <code>gpt-5.6-terra</code>). On sites that use Otter's own OpenAI API key (rather than WordPress AI Client connectors), four things then fail outright:<ul><li>saving or changing the API key, because of a hard-coded check at <code>inc/server/class-prompt-server.php:144</code>;</li><li>the AI Block;</li><li>the AI Form generator;</li><li>the legacy Patterns picker.</li></ul><p>The last three fail because the prompt templates Otter downloads from Themeisle, which we read on 2026-10-09, all pin <code>"model": "gpt-3.5-turbo"</code>.</p></li><li><strong>What our scan missed and this review found.</strong> The automated scan flagged line 144. Reading the code showed that line 144 is only the API-key check. The larger exposure is the <strong>remote templates</strong>: Otter caches them for 7 days, so a server-side fix by the vendor can take up to a week to reach a site.</li><li><strong>What still works.</strong> Otter 3.2.7 is already partly modernised. The page/section generator defaults to <code>gpt-5-mini</code> and already renames <code>max_tokens</code> to <code>max_completion_tokens</code>. The WordPress AI Client backend ignores the model pin. Neither is affected on 23 Oct.</li><li><strong>The fix.</strong> Two files change (5 diff hunks). The patch adds a filterable map of retiring models to OpenAI's recommended replacements. When it swaps a non-reasoning model, it sets <code>reasoning_effort: "none"</code>. It drops <code>temperature</code>/<code>top_p</code> for GPT-5.x unless a site opts back in, converts the deprecated <code>functions</code>/<code>function_call</code> to <code>tools</code>/<code>tool_choice</code>, reads the <code>tool_calls</code> response shape, and surfaces model refusals. Every default can be changed through a WordPress filter, and one filter disables the whole swap. A no-core-edit <strong>mu-plugin</strong> with the same behaviour is included for site owners who cannot wait for a plugin release.</li><li><strong>Verified:</strong><ul><li>the patch applies to pristine 3.2.7;</li><li><code>php -l</code> reports no syntax errors on PHP 5.6.40 (the plugin's minimum) or PHP 8.3.35;</li><li>24/24 behavioural checks pass for the patch logic and 8/8 for the mu-plugin, on both PHP versions;</li><li>the harness's Python mirror of the transform passes 10/10.</li></ul></li><li><strong>Not verified:</strong><ul><li>whether <code>gpt-5.6-terra</code> accepts <code>temperature</code> (the docs do not say), so the patch defaults to the safe choice;</li><li>the exact error OpenAI returns after shutdown;</li><li>live quality, latency and cost on these prompts. The harness measures those on the client's key.</li></ul></li><li><strong>Cost note (arithmetic on verified list prices).</strong> Per token, <code>gpt-5.6-terra</code> costs 4x <code>gpt-3.5-turbo</code> for input ($2.00 vs $0.50 per 1M) and 8x for output ($12.00 vs $1.50). The real multiplier depends on measured token counts. That cost lands on the site owner's OpenAI bill.</li></ul>
+<h2 id="2-exposure-file-line">2. Exposure (file:line)</h2>
+<table><thead><tr><th>#</th><th>Location (Otter 3.2.7)</th><th>What it does</th><th>23 Oct impact</th></tr></thead><tbody><tr><td>1</td><td><code>inc/server/class-prompt-server.php:144</code> in <code>save_api_key()</code> (lines 119-188)</td><td>Validates a newly entered key with a chat completion on hard-coded <code>'model' =&gt; 'gpt-3.5-turbo'</code>. Any OpenAI error (lines 176-183) returns a <code>WP_Error</code> and the key is <strong>not saved</strong> (line 185 never runs).</td><td><strong>Breaks</strong></td></tr><tr><td>2</td><td>Remote templates from <code>https://api.themeisle.com/templates-cloud/otter-prompts</code>, fetched by <code>class-prompt-server.php:312-358</code> and cached for <code>WEEK_IN_SECONDS</code> (line 352)</td><td>All 4 templates (<code>form</code>, <code>contentGenerator</code>, <code>textTransformation</code>, <code>patternsPicker</code>) pin <code>"model": "gpt-3.5-turbo"</code>. <code>form</code> and <code>patternsPicker</code> also use legacy <code>functions</code> + <code>function_call</code>. Read 2026-10-09, sha256 <code>01e20afa...cfda114db3</code>.</td><td><strong>Breaks</strong> the AI Block, AI Form generator and Patterns picker</td></tr><tr><td>3</td><td><code>inc/server/class-otter-openai-backend.php:62-76</code></td><td>The model is taken from the template payload; the <code>gpt-5-mini</code> fallback (line 71) applies only when no model is sent</td><td>Template pin wins</td></tr><tr><td>4</td><td><code>inc/server/class-otter-openai-backend.php:178-187</code></td><td>The response parser reads <code>message.function_call.arguments</code> or <code>message.content</code> only, and ignores <code>tool_calls</code> and <code>refusal</code></td><td>Needs extending if requests move to <code>tools</code></td></tr><tr><td>5</td><td><code>build/blocks/blocks.js</code> (minified, webpack module 3907)</td><td>"Regenerate" merges <code>temperature: 1.3</code> into the template request. The page/section pipeline sends <code>response_format: json_object</code>, <code>max_tokens: 8192</code> and no model.</td><td><code>temperature</code> support on GPT-5.6 is undocumented</td></tr><tr><td>6</td><td><code>build/dashboard/index.js</code></td><td>The dashboard "Save" button POSTs to <code>otter/v1/openai/key</code> and shows any error as a snackbar</td><td>User-visible symptom of item 1</td></tr><tr><td>7</td><td><code>inc/server/class-ai-backend-resolver.php:55-65</code></td><td>Uses the WordPress AI Client backend when a provider is configured; otherwise uses Otter's OpenAI-key path</td><td>Decides which sites are exposed</td></tr><tr><td>8</td><td><code>packages/e2e-tests/mu-plugins/otter-e2e-bootstrap.php:141,150,184,719,912</code></td><td>Test fixtures and mocks that mention <code>gpt-3.5-turbo(-0125)</code></td><td>None (tests only)</td></tr></tbody></table>
+<h2 id="3-what-breaks-on-23-oct-2026">3. What breaks on 23 Oct 2026</h2>
+<p>Applies to sites on Otter's OpenAI-key path (item 7). We do not know what share of the 300,000 installs that is.</p>
+<table><thead><tr><th>Feature</th><th>Request path</th><th>Expected behaviour after shutdown</th></tr></thead><tbody><tr><td>Save or change the OpenAI key (Otter dashboard)</td><td>Key check, item 1</td><td>The check fails, so the key is not saved and the dashboard shows OpenAI's error. A key saved earlier stays stored, because the check runs only on save.</td></tr><tr><td>AI Block (content generator)</td><td><code>textTransformation</code> template</td><td>Each generation returns an OpenAI error, shown in the block as "Error &lt;code&gt; - &lt;message&gt;"</td></tr><tr><td>AI Form generator</td><td><code>form</code> template</td><td>Same; no form fields are generated</td></tr><tr><td>Patterns picker (blocks saved in that mode)</td><td><code>patternsPicker</code> template</td><td>Same</td></tr><tr><td>AI page/section generation</td><td>No model sent, so <code>gpt-5-mini</code></td><td><strong>Not affected on 23 Oct.</strong> Follow-up: the <code>gpt-5-mini</code> model page lists one snapshot, <code>gpt-5-mini-2025-08-07</code>, marked Deprecated, and the deprecations page lists that snapshot for shutdown on <strong>11 Dec 2026</strong> (replacement <code>gpt-5.6-terra</code>). Whether the alias will be re-pointed is not stated.</td></tr><tr><td>Sites using WordPress AI Client connectors</td><td><code>WP_AI_Client_Backend</code></td><td>Not affected by the pin, because Otter drops <code>model</code> on this path</td></tr></tbody></table>
+<p>The exact HTTP status and error text OpenAI will return for a shut-down model cannot be verified before the shutdown. The harness treats <code>model_not_found</code> or HTTP 404 as "old model unavailable".</p>
+<p>Themeisle controls the served templates and may update them before 23 Oct. Two things still need a plugin-side fix: the key check is compiled into the plugin, and cached templates can be up to 7 days old. The patch below works whatever model the templates pin.</p>
+<h2 id="4-parameter-differences-with-sources">4. Parameter differences, with sources</h2>
+<p>All OpenAI pages were read live on 2026-10-09 between about 12:30 and 12:50 EDT. "Verified" means the statement appears on the cited page.</p>
+<table><thead><tr><th>Item</th><th>Otter sends today</th><th>gpt-5.6-terra per OpenAI docs</th><th>Patch action</th><th>Source</th><th>Status</th></tr></thead><tbody><tr><td><code>model</code></td><td><code>gpt-3.5-turbo</code> (key check + 4 templates)</td><td>Shutdown 2026-10-23; recommended replacement <code>gpt-5.6-terra</code></td><td>Swap via filterable map</td><td><a href="https://developers.openai.com/api/docs/deprecations">Deprecations</a></td><td>Verified</td></tr><tr><td>Endpoint</td><td><code>v1/chat/completions</code></td><td>Chat Completions and Responses supported</td><td>Stay on Chat Completions</td><td><a href="https://developers.openai.com/api/docs/models/gpt-5.6-terra">gpt-5.6-terra</a></td><td>Verified</td></tr><tr><td><code>reasoning_effort</code></td><td>Not sent</td><td><code>none, low, medium (default), high, xhigh, max</code>; GPT-5.6 "defaults to medium" if omitted</td><td>Send <code>none</code> after swapping a non-reasoning model (filter: <code>otter_ai_openai_swap_reasoning_effort</code>)</td><td>terra page; <a href="https://developers.openai.com/api/docs/guides/latest-model">GPT-5.6 guide</a></td><td>Values verified; quality effect to be measured</td></tr><tr><td><code>max_tokens</code></td><td>Page pipeline: 8192 (already renamed by 3.2.7); templates: none</td><td>"Deprecated ... in favor of <code>max_completion_tokens</code>, and is not compatible with o-series models"; <code>max_completion_tokens</code> includes "visible output tokens and reasoning tokens"</td><td>Keep the existing rename</td><td><a href="https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create">Chat API reference</a></td><td>Verified</td></tr><tr><td><code>temperature</code>, <code>top_p</code></td><td><code>temperature: 1.3</code> on Regenerate</td><td>Not stated for GPT-5.6 on the model page or the API reference. The API reference says parameter support "can differ ... particularly for newer reasoning models". The same guide's GPT-6 section says "When reasoning effort is not none, remove temperature, top_p, and top_logprobs".</td><td>Dropped for <code>gpt-5*</code>/<code>o*</code> by default; opt back in with <code>otter_ai_openai_keep_sampling_params</code>; the harness tests both with <code>--keep-sampling</code></td><td>API reference; latest-model guide</td><td><strong>Not verified for terra.</strong> Designed defensively</td></tr><tr><td><code>functions</code>, <code>function_call</code></td><td><code>form</code>, <code>patternsPicker</code></td><td>"Deprecated in favor of <code>tools</code>" / "in favor of <code>tool_choice</code>"; terra lists function calling as supported</td><td>Convert to <code>tools</code> + named <code>tool_choice</code></td><td>API reference; terra page</td><td>Deprecation verified. Whether terra still accepts the legacy fields is not verified (not relied on)</td></tr><tr><td>Response shape</td><td>Reads <code>function_call.arguments</code> or <code>content</code></td><td><code>message.tool_calls[].function.arguments</code>; <code>function_call</code> "deprecated and replaced by tool_calls"</td><td>Read <code>tool_calls</code> first; keep both fallbacks</td><td>API reference</td><td>Verified</td></tr><tr><td>Refusals</td><td><code>message.refusal</code> ignored, so the editor shows "empty response" (502, auto-retried twice)</td><td><code>message.refusal</code> documented. GPT-5.6 guide: "users may encounter safeguards that block or refuse some requests"; generation can be "paused for several seconds mid-stream"</td><td>Return 422 <code>model_refusal</code> with the model's text (not auto-retried)</td><td>API reference; GPT-5.6 guide</td><td>Field verified; frequency to be measured</td></tr><tr><td><code>response_format: json_object</code></td><td>Page pipeline only</td><td>"older JSON mode ... Using json_schema is preferred"</td><td>Unchanged (path not affected on 23 Oct)</td><td>API reference</td><td>Verified</td></tr><tr><td>Usage and billing</td><td>Editor shows <code>total_tokens</code></td><td>Reasoning tokens "are billed as output tokens"; usage reports <code>reasoning_tokens</code>, <code>cached_tokens</code>, <code>cache_write_tokens</code>; GPT-5.6 cache writes billed at 1.25x uncached input</td><td>Unchanged; the harness records every field</td><td><a href="https://developers.openai.com/api/docs/guides/reasoning">Reasoning guide</a>; API reference; terra page</td><td>Verified</td></tr><tr><td>Price per 1M tokens</td><td>gpt-3.5-turbo: $0.50 in / $1.50 out</td><td>terra: $2.00 in / $0.20 cached / $12.00 out</td><td>Cost moves with the swap; the harness estimates it</td><td><a href="https://developers.openai.com/api/docs/models/gpt-3.5-turbo">gpt-3.5-turbo</a>; terra page</td><td>Verified (list prices)</td></tr><tr><td>Limits</td><td>16,385 context / 4,096 max output</td><td>1,050,000 context / 128,000 max output; knowledge cutoff Feb 16, 2026</td><td>n/a</td><td>Model pages</td><td>Verified</td></tr><tr><td>Length and verbosity</td><td>n/a</td><td>GPT-5.6 "tends to be more concise by default than GPT-5.5"; <code>verbosity</code> low/medium/high, default medium</td><td>Not set; use it if the harness shows outputs that are too short</td><td>GPT-5.6 guide; API reference</td><td>Verified (relative to GPT-5.5, not to gpt-3.5)</td></tr></tbody></table>
+<h2 id="5-the-patch">5. The patch</h2>
+<p>File: <code>patch.diff</code> (unified diff against Otter 3.2.7; apply from the plugin root with <code>patch -p1 &lt; patch.diff</code>). Patched copies of both files are in <code>patch-work/b/</code>.</p>
+<p><strong>Hunk 1, <code>class-otter-openai-backend.php</code>: constants and helpers.</strong> Adds:</p>
+<ul><li><code>RETIRING_MODEL_REPLACEMENTS</code>: every Chat Completions model on OpenAI's 23 Oct list, mapped to the replacement OpenAI recommends (filter <code>otter_ai_openai_model_replacements</code>; return an empty array to disable the swap);</li><li><code>get_key_validation_model()</code>: defaults to the <code>gpt-3.5-turbo</code> replacement (filter <code>otter_ai_openai_key_validation_model</code>);</li><li><code>supports_reasoning_effort_none()</code>: true for the GPT-5.6 family only, which is documented to accept <code>none</code>;</li><li><code>adapt_payload()</code>, which does four things:<ul><li>swaps the model;</li><li>sets <code>reasoning_effort: none</code> only when a non-reasoning model was swapped and the request set no effort (o-series sources keep the target's default);</li><li>drops <code>temperature</code>/<code>top_p</code>/logprobs for <code>gpt-5*</code>/<code>o*</code> unless a site opts in;</li><li>converts <code>functions</code>/<code>function_call</code> to <code>tools</code>/<code>tool_choice</code> unless the request already has <code>tools</code>.</li></ul></li></ul>
+<pre><code><span class="meta">--- a/inc/server/class-otter-openai-backend.php</span>
+<span class="meta">+++ b/inc/server/class-otter-openai-backend.php</span>
+<span class="hunk">@@ -20,6 +21,173 @@</span>
+ 	const BASE_URL = 'https://api.openai.com/v1/chat/completions';
+ 
+ 	/**
+<span class="add">+	 * OpenAI chat models shut down on 2026-10-23, mapped to the replacement</span>
+<span class="add">+	 * OpenAI recommends for each.</span>
+<span class="add">+	 *</span>
+<span class="add">+	 * Source: https://developers.openai.com/api/docs/deprecations (entry</span>
+<span class="add">+	 * announced 2026-04-22). Filter with `otter_ai_openai_model_replacements`.</span>
+<span class="add">+	 *</span>
+<span class="add">+	 * @var array&lt;string, string&gt;</span>
+<span class="add">+	 */</span>
+<span class="add">+	const RETIRING_MODEL_REPLACEMENTS = array(</span>
+<span class="add">+		'gpt-3.5-turbo'           =&gt; 'gpt-5.6-terra',</span>
+<span class="add">+		'gpt-3.5-turbo-0125'      =&gt; 'gpt-5.6-terra',</span>
+<span class="add">+		'o4-mini'                 =&gt; 'gpt-5.6-terra',</span>
+<span class="add">+		'o4-mini-2025-04-16'      =&gt; 'gpt-5.6-terra',</span>
+<span class="add">+		'gpt-4'                   =&gt; 'gpt-5.6-sol',</span>
+<span class="add">+		'gpt-4-0613'              =&gt; 'gpt-5.6-sol',</span>
+<span class="add">+		'gpt-4-turbo'             =&gt; 'gpt-5.6-sol',</span>
+<span class="add">+		'gpt-4-turbo-2024-04-09'  =&gt; 'gpt-5.6-sol',</span>
+<span class="add">+		'gpt-4-1106-preview'      =&gt; 'gpt-5.6-sol',</span>
+<span class="add">+		'gpt-4o-2024-05-13'       =&gt; 'gpt-5.6-sol',</span>
+<span class="add">+		'o1'                      =&gt; 'gpt-5.6-sol',</span>
+<span class="add">+		'o1-2024-12-17'           =&gt; 'gpt-5.6-sol',</span>
+<span class="add">+		'o3-mini'                 =&gt; 'gpt-5.6-sol',</span>
+<span class="add">+		'o3-mini-2025-01-31'      =&gt; 'gpt-5.6-sol',</span>
+<span class="add">+		'gpt-4.1-nano'            =&gt; 'gpt-5.6-luna',</span>
+<span class="add">+		'gpt-4.1-nano-2025-04-14' =&gt; 'gpt-5.6-luna',</span>
+<span class="add">+	);</span>
+<span class="add">+</span>
+<span class="add">+	/**</span>
+<span class="add">+	 * Reasoning effort sent after swapping a retiring NON-reasoning model</span>
+<span class="add">+	 * (gpt-3.5/gpt-4 family). GPT-5.6 models default to `medium`; `none` keeps</span>
+<span class="add">+	 * the latency and token profile closest to the model being replaced.</span>
+<span class="add">+	 *</span>
+<span class="add">+	 * @var string</span>
+<span class="add">+	 */</span>
+<span class="add">+	const SWAP_REASONING_EFFORT = 'none';</span>
+<span class="add">+</span>
+<span class="add">+	/**</span>
+<span class="add">+	 * Map a retiring model ID to its recommended replacement.</span>
+<span class="add">+	 *</span>
+<span class="add">+	 * @param string $model Model ID.</span>
+<span class="add">+	 * @return string The replacement, or the input unchanged when it is not retiring.</span>
+<span class="add">+	 */</span>
+<span class="add">+	public static function get_replacement_model( $model ) {</span>
+<span class="add">+		/**</span>
+<span class="add">+		 * Filters the retiring-model =&gt; replacement map.</span>
+<span class="add">+		 *</span>
+<span class="add">+		 * Return an empty array to disable the automatic swap.</span>
+<span class="add">+		 *</span>
+<span class="add">+		 * @param array&lt;string, string&gt; $replacements Retiring model ID =&gt; replacement model ID.</span>
+<span class="add">+		 */</span>
+<span class="add">+		$replacements = apply_filters( 'otter_ai_openai_model_replacements', self::RETIRING_MODEL_REPLACEMENTS );</span>
+<span class="add">+</span>
+<span class="add">+		if ( is_array( $replacements ) &amp;&amp; isset( $replacements[ $model ] ) &amp;&amp; is_string( $replacements[ $model ] ) &amp;&amp; '' !== $replacements[ $model ] ) {</span>
+<span class="add">+			return $replacements[ $model ];</span>
+<span class="add">+		}</span>
+<span class="add">+</span>
+<span class="add">+		return $model;</span>
+<span class="add">+	}</span>
+<span class="add">+</span>
+<span class="add">+	/**</span>
+<span class="add">+	 * Model used for the one-off API key check in the Otter dashboard.</span>
+<span class="add">+	 *</span>
+<span class="add">+	 * @return string</span>
+<span class="add">+	 */</span>
+<span class="add">+	public static function get_key_validation_model() {</span>
+<span class="add">+		/**</span>
+<span class="add">+		 * Filters the model used to validate a newly saved OpenAI API key.</span>
+<span class="add">+		 *</span>
+<span class="add">+		 * @param string $model Model ID. Defaults to the gpt-3.5-turbo replacement.</span>
+<span class="add">+		 */</span>
+<span class="add">+		return (string) apply_filters( 'otter_ai_openai_key_validation_model', self::get_replacement_model( 'gpt-3.5-turbo' ) );</span>
+<span class="add">+	}</span>
+<span class="add">+</span>
+<span class="add">+	/**</span>
+<span class="add">+	 * Whether the model documents `reasoning_effort: none` (GPT-5.6 family).</span>
+<span class="add">+	 *</span>
+<span class="add">+	 * @param string $model Model ID.</span>
+<span class="add">+	 * @return bool</span>
+<span class="add">+	 */</span>
+<span class="add">+	public static function supports_reasoning_effort_none( $model ) {</span>
+<span class="add">+		return 1 === preg_match( '/^gpt-5\.6(-(sol|terra|luna))?$/', (string) $model );</span>
+<span class="add">+	}</span>
+<span class="add">+</span>
+<span class="add">+	/**</span>
+<span class="add">+	 * Adapt an OpenAI-shaped payload to the model it will be sent to.</span>
+<span class="add">+	 *</span>
+<span class="add">+	 * 1. Swaps retiring model IDs for their recommended replacement.</span>
+<span class="add">+	 * 2. Sets `reasoning_effort` after a swap from a non-reasoning model.</span>
+<span class="add">+	 * 3. Drops sampling parameters (`temperature`, `top_p`, logprobs) for</span>
+<span class="add">+	 *    reasoning-family models unless a site opts back in.</span>
+<span class="add">+	 * 4. Converts deprecated `functions`/`function_call` to `tools`/`tool_choice`.</span>
+<span class="add">+	 *</span>
+<span class="add">+	 * @param array&lt;string, mixed&gt; $payload The OpenAI-format payload.</span>
+<span class="add">+	 * @return array&lt;string, mixed&gt;</span>
+<span class="add">+	 */</span>
+<span class="add">+	public static function adapt_payload( array $payload ) {</span>
+<span class="add">+		$requested = isset( $payload['model'] ) &amp;&amp; is_string( $payload['model'] ) ? $payload['model'] : '';</span>
+<span class="add">+		$model     = '' !== $requested ? self::get_replacement_model( $requested ) : '';</span>
+<span class="add">+</span>
+<span class="add">+		if ( '' !== $model &amp;&amp; $model !== $requested ) {</span>
+<span class="add">+			$payload['model'] = $model;</span>
+<span class="add">+</span>
+<span class="add">+			if ( ! isset( $payload['reasoning_effort'] ) &amp;&amp; 1 !== preg_match( '/^o[1-9]/', $requested ) &amp;&amp; self::supports_reasoning_effort_none( $model ) ) {</span>
+<span class="add">+				/**</span>
+<span class="add">+				 * Filters the reasoning effort used after a retiring non-reasoning model is swapped.</span>
+<span class="add">+				 *</span>
+<span class="add">+				 * Return '' to omit `reasoning_effort` and use the model default.</span>
+<span class="add">+				 *</span>
+<span class="add">+				 * @param string               $effort    Reasoning effort.</span>
+<span class="add">+				 * @param string               $requested The retiring model ID that was requested.</span>
+<span class="add">+				 * @param string               $model     The replacement model ID.</span>
+<span class="add">+				 * @param array&lt;string, mixed&gt; $payload   The payload.</span>
+<span class="add">+				 */</span>
+<span class="add">+				$effort = (string) apply_filters( 'otter_ai_openai_swap_reasoning_effort', self::SWAP_REASONING_EFFORT, $requested, $model, $payload );</span>
+<span class="add">+</span>
+<span class="add">+				if ( '' !== $effort ) {</span>
+<span class="add">+					$payload['reasoning_effort'] = $effort;</span>
+<span class="add">+				}</span>
+<span class="add">+			}</span>
+<span class="add">+		}</span>
+<span class="add">+</span>
+<span class="add">+		if ( 1 === preg_match( '/^(gpt-5|o[1-9])/', $model ) ) {</span>
+<span class="add">+			/**</span>
+<span class="add">+			 * Filters whether sampling parameters are kept for reasoning-family models.</span>
+<span class="add">+			 *</span>
+<span class="add">+			 * @param bool                 $keep    Keep `temperature`, `top_p`, `logprobs`, `top_logprobs`. Default false.</span>
+<span class="add">+			 * @param string               $model   The model ID.</span>
+<span class="add">+			 * @param array&lt;string, mixed&gt; $payload The payload.</span>
+<span class="add">+			 */</span>
+<span class="add">+			if ( ! apply_filters( 'otter_ai_openai_keep_sampling_params', false, $model, $payload ) ) {</span>
+<span class="add">+				unset( $payload['temperature'], $payload['top_p'], $payload['logprobs'], $payload['top_logprobs'] );</span>
+<span class="add">+			}</span>
+<span class="add">+		}</span>
+<span class="add">+</span>
+<span class="add">+		if ( isset( $payload['functions'] ) &amp;&amp; is_array( $payload['functions'] ) &amp;&amp; ! isset( $payload['tools'] ) ) {</span>
+<span class="add">+			$tools = array();</span>
+<span class="add">+</span>
+<span class="add">+			foreach ( $payload['functions'] as $function ) {</span>
+<span class="add">+				if ( is_array( $function ) &amp;&amp; ! empty( $function['name'] ) ) {</span>
+<span class="add">+					$tools[] = array(</span>
+<span class="add">+						'type'     =&gt; 'function',</span>
+<span class="add">+						'function' =&gt; $function,</span>
+<span class="add">+					);</span>
+<span class="add">+				}</span>
+<span class="add">+			}</span>
+<span class="add">+</span>
+<span class="add">+			if ( ! empty( $tools ) ) {</span>
+<span class="add">+				$function_call = isset( $payload['function_call'] ) ? $payload['function_call'] : null;</span>
+<span class="add">+</span>
+<span class="add">+				if ( is_array( $function_call ) &amp;&amp; ! empty( $function_call['name'] ) ) {</span>
+<span class="add">+					$payload['tool_choice'] = array(</span>
+<span class="add">+						'type'     =&gt; 'function',</span>
+<span class="add">+						'function' =&gt; array( 'name' =&gt; (string) $function_call['name'] ),</span>
+<span class="add">+					);</span>
+<span class="add">+				} elseif ( 'none' === $function_call || 'auto' === $function_call ) {</span>
+<span class="add">+					$payload['tool_choice'] = $function_call;</span>
+<span class="add">+				}</span>
+<span class="add">+</span>
+<span class="add">+				$payload['tools'] = $tools;</span>
+<span class="add">+				unset( $payload['functions'], $payload['function_call'] );</span>
+<span class="add">+			}</span>
+<span class="add">+		}</span>
+<span class="add">+</span>
+<span class="add">+		return $payload;</span>
+<span class="add">+	}</span>
+<span class="add">+</span>
+<span class="add">+	/**</span>
+ 	 * Whether an Otter OpenAI API key is configured.
+ 	 *
+ 	 * @return bool</code></pre>
+<p><strong>Hunk 2: one call site.</strong> <code>adapt_payload()</code> runs after all existing filters (<code>otter_ai_otter_openai_payload</code>, <code>otter_ai_otter_openai_model</code>, <code>otter_ai_block_generation_model</code>) and before the existing <code>max_tokens</code> rename. A template, or a site filter, that still names a retiring model is therefore always remapped.</p>
+<pre><code><span class="hunk">@@ -75,6 +243,10 @@</span>
+ 			$payload['model'] = $model;
+ 		}
+ 
+<span class="add">+		// Prompt templates are fetched remotely and cached for a week, so they</span>
+<span class="add">+		// can still pin a model OpenAI has shut down. Adapt after all filters ran.</span>
+<span class="add">+		$payload = self::adapt_payload( $payload );</span>
+<span class="add">+</span>
+ 		// GPT-5/o-series models reject `max_tokens`; `max_completion_tokens` is
+ 		// accepted by all current chat-completions models.
+ 		if ( isset( $payload['max_tokens'] ) ) {</code></pre>
+<p><strong>Hunk 3: response parsing.</strong> Reads <code>tool_calls[0].function.arguments</code> first, then the legacy <code>function_call</code>, then <code>content</code>, so both old and new response shapes work. An empty reply that carries <code>message.refusal</code> now returns HTTP 422 <code>model_refusal</code> with the model's text. Before, it was a generic 502 "empty response", which the editor auto-retries twice.</p>
+<pre><code><span class="hunk">@@ -179,13 +351,22 @@</span>
+ 		$content = '';
+ 		$format  = 'text';
+ 
+<span class="del">-		if ( isset( $message['function_call'] ) &amp;&amp; is_array( $message['function_call'] ) &amp;&amp; isset( $message['function_call']['arguments'] ) ) {</span>
+<span class="add">+		if ( isset( $message['tool_calls'][0]['function']['arguments'] ) &amp;&amp; is_string( $message['tool_calls'][0]['function']['arguments'] ) ) {</span>
+<span class="add">+			// `tools`/`tool_choice` response shape (see adapt_payload()).</span>
+<span class="add">+			$content = $message['tool_calls'][0]['function']['arguments'];</span>
+<span class="add">+			$format  = 'json';</span>
+<span class="add">+		} elseif ( isset( $message['function_call'] ) &amp;&amp; is_array( $message['function_call'] ) &amp;&amp; isset( $message['function_call']['arguments'] ) ) {</span>
+ 			$content = (string) $message['function_call']['arguments'];
+ 			$format  = 'json';
+ 		} elseif ( isset( $message['content'] ) ) {
+ 			$content = (string) $message['content'];
+ 		}
+ 
+<span class="add">+		if ( '' === $content &amp;&amp; isset( $message['refusal'] ) &amp;&amp; is_string( $message['refusal'] ) &amp;&amp; '' !== $message['refusal'] ) {</span>
+<span class="add">+			// Surface the model's refusal instead of a generic, auto-retried 502.</span>
+<span class="add">+			return $this-&gt;error_response( 'model_refusal', $message['refusal'], 422 );</span>
+<span class="add">+		}</span>
+<span class="add">+</span>
+ 		if ( '' === $content ) {
+ 			return $this-&gt;error_response( 'empty_response', __( 'OpenAI returned an empty response. Please try again.', 'otter-blocks' ), 502 );
+ 		}</code></pre>
+<p><strong>Hunks 4-5, <code>class-prompt-server.php</code>: the line-144 key check.</strong> Builds the same "Hello!" request with <code>get_key_validation_model()</code>, adding <code>reasoning_effort: none</code> when the model supports it. It is still a real chat completion, as before, so restricted project keys that can call models but cannot list them keep validating.</p>
+<pre><code><span class="meta">--- a/inc/server/class-prompt-server.php</span>
+<span class="meta">+++ b/inc/server/class-prompt-server.php</span>
+<span class="hunk">@@ -131,6 +132,27 @@</span>
+ 			return new \WP_REST_Response( array( 'message' =&gt; __( 'API key saved.', 'otter-blocks' ) ), 200 );
+ 		}
+ 
+<span class="add">+		// gpt-3.5-turbo shuts down on 2026-10-23; validate with its replacement.</span>
+<span class="add">+		$validation_model = Otter_OpenAI_Backend::get_key_validation_model();</span>
+<span class="add">+		$validation_body  = array(</span>
+<span class="add">+			'model'    =&gt; $validation_model,</span>
+<span class="add">+			'messages' =&gt; array(</span>
+<span class="add">+				array(</span>
+<span class="add">+					'role'    =&gt; 'system',</span>
+<span class="add">+					'content' =&gt; 'You are a helpful assistant.',</span>
+<span class="add">+				),</span>
+<span class="add">+				array(</span>
+<span class="add">+					'role'    =&gt; 'user',</span>
+<span class="add">+					'content' =&gt; 'Hello!',</span>
+<span class="add">+				),</span>
+<span class="add">+			),</span>
+<span class="add">+		);</span>
+<span class="add">+</span>
+<span class="add">+		// GPT-5.6 models reason by default (`medium`); a key check needs none.</span>
+<span class="add">+		if ( Otter_OpenAI_Backend::supports_reasoning_effort_none( $validation_model ) ) {</span>
+<span class="add">+			$validation_body['reasoning_effort'] = 'none';</span>
+<span class="add">+		}</span>
+<span class="add">+</span>
+ 		$response = wp_remote_post(
+ 			self::BASE_URL,
+ 			array(
+<span class="hunk">@@ -139,21 +161,7 @@</span>
+ 					'Authorization' =&gt; 'Bearer ' . $api_key,
+ 					'Content-Type'  =&gt; 'application/json',
+ 				),
+<span class="del">-				'body'    =&gt; wp_json_encode(</span>
+<span class="del">-					array(</span>
+<span class="del">-						'model'    =&gt; 'gpt-3.5-turbo',</span>
+<span class="del">-						'messages' =&gt; array(</span>
+<span class="del">-							array(</span>
+<span class="del">-								'role'    =&gt; 'system',</span>
+<span class="del">-								'content' =&gt; 'You are a helpful assistant.',</span>
+<span class="del">-							),</span>
+<span class="del">-							array(</span>
+<span class="del">-								'role'    =&gt; 'user',</span>
+<span class="del">-								'content' =&gt; 'Hello!',</span>
+<span class="del">-							),</span>
+<span class="del">-						),</span>
+<span class="del">-					)</span>
+<span class="del">-				),</span>
+<span class="add">+				'body'    =&gt; wp_json_encode( $validation_body ),</span>
+ 				'timeout' =&gt; 2 * MINUTE_IN_SECONDS,
+ 			)
+ 		);</code></pre>
+<p><strong>Modification notices (GPL-2.0 section 2(a)).</strong> Each changed file also gets one dated comment line in its header docblock that says what changed and that the original is (c) Themeisle under GPL-2.0-or-later. These two comment-only hunks change no behaviour, and the hunk numbers above count code hunks only. Licence text: <code>LICENSE-GPL-2.0.txt</code>; notice: <code>patch-work/NOTICE.md</code>.</p>
+<pre><code><span class="meta">--- a/inc/server/class-otter-openai-backend.php</span>
+<span class="meta">+++ b/inc/server/class-otter-openai-backend.php</span>
+<span class="hunk">@@ -1,6 +1,7 @@</span>
+ &lt;?php
+ /**
+  * Otter OpenAI backend strategy.
+<span class="add">+ * Modified 2026-10-09 by Model Sunset Desk: swaps OpenAI models retiring 2026-10-23 for the recommended replacements (adapt_payload) and parses tool_calls and refusals; original © Themeisle, GPL-2.0-or-later</span>
+  *
+  * @package ThemeIsle\GutenbergBlocks\Server
+  */
+<span class="meta">--- a/inc/server/class-prompt-server.php</span>
+<span class="meta">+++ b/inc/server/class-prompt-server.php</span>
+<span class="hunk">@@ -1,6 +1,7 @@</span>
+ &lt;?php
+ /**
+  * Prompt server logic.
+<span class="add">+ * Modified 2026-10-09 by Model Sunset Desk: the API-key check no longer hard-codes gpt-3.5-turbo (uses its replacement with reasoning_effort none); original © Themeisle, GPL-2.0-or-later</span>
+  *
+  * @package ThemeIsle\GutenbergBlocks\Server
+  */</code></pre>
+<p><strong>Backward compatibility.</strong></p>
+<ul><li>The WordPress AI Client path is untouched.</li><li>Requests with no retiring model keep their model.</li><li>The page/section pipeline (<code>gpt-5-mini</code>, no <code>temperature</code>) is unchanged apart from the existing <code>max_tokens</code> rename.</li><li>All existing Otter filters still run.</li><li>Nothing is stored in the database, and no option, table or REST route changes.</li><li>The code avoids syntax newer than PHP 5.6. <code>php -l</code> passes on 5.6.40 and 8.3.35.</li><li>One behavioural change applies to any model: <code>functions</code> are sent as <code>tools</code>. If a site disables the swap and stays on <code>gpt-3.5-turbo</code> until 23 Oct, that relies on <code>gpt-3.5-turbo-0125</code> supporting <code>tools</code>. That is our prior knowledge and was not re-verified on 2026-10-09; <code>--candidate gpt-3.5-turbo</code> in the harness would show it.</li></ul>
+<p><strong>No-core-edit alternative for site owners</strong> (<code>mu-plugin/otter-model-sunset.php</code>). Editing plugin files is undone by the next plugin update. The mu-plugin applies the same transform through Otter's existing hooks:</p>
+<ul><li><code>otter_ai_otter_openai_payload</code> adapts the request;</li><li><code>otter_ai_otter_openai_response</code> maps <code>tool_calls</code> back to the <code>function_call</code> shape the 3.2.7 parser reads, and turns an empty reply with <code>refusal</code> into an error that shows the refusal text (Otter reports it as a 502, so the editor may retry);</li><li>an <code>http_request_args</code> hook, scoped to Otter's <code>/otter/v1/openai/key</code> REST request only, fixes the key check.</li></ul>
+<p>To install, copy it to <code>wp-content/mu-plugins/</code>. To remove, delete the file.</p>
+<h2 id="6-test-plan-and-dry-run-demo">6. Test plan and dry-run demo</h2>
+<p><strong>Done for this sample (no API spend):</strong></p>
+<table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody><tr><td><code>patch -p1 --dry-run</code> on a fresh copy of the 3.2.7 source</td><td>Applies cleanly (5 code hunks plus 2 comment-only notice hunks; re-checked 2026-10-09 after the notices were added); the result is byte-identical to <code>patch-work/b/</code></td></tr><tr><td><code>php -l</code> on patched files and the mu-plugin (official <code>php:5.6-cli</code> and <code>php:8.3-cli</code> images, no network)</td><td>No syntax errors</td></tr><tr><td><code>tests/test_adapt_payload.php</code>: 24 checks on the code hunk 1 adds, extracted from <code>patch.diff</code> (no Otter code executed)</td><td>24/24 passed on PHP 5.6.40; 24/24 passed on PHP 8.3.35</td></tr><tr><td><code>tests/test_mu_plugin.php</code>: 8 checks</td><td>8/8 passed on PHP 5.6.40; 8/8 passed on PHP 8.3.35</td></tr><tr><td><code>tests/test_transform_mirror.py</code>: harness mirror matches patch behaviour</td><td>10/10 passed (Python 3.14)</td></tr><tr><td>Harness live-mode guards: missing key; pre-flight cost cap</td><td>Both abort before any request (<code>harness/out/live-guards.console.txt</code>)</td></tr></tbody></table>
+<p><strong>Not done here:</strong></p>
+<ul><li>running the patched plugin inside WordPress (we do not execute downloaded third-party code);</li><li>any live model call.</li></ul>
+<p>Both are part of client acceptance:</p>
+<ol><li>Install on staging and save the key; expect "API key saved."</li><li>Generate one AI Block, one AI form and one Regenerate.</li><li>Confirm "Token used" appears and nothing returns HTTP 400.</li><li>Run the harness live.</li></ol>
+<p><strong>Regression harness (<code>harness/</code>).</strong></p>
+<ul><li>30 cases matching the exposed features: 16 AI Block (including HTML-preservation, language and length cases), 10 AI Form (including file uploads, French and Spanish), and 4 Patterns picker (one with the Pro add-on).</li><li>Four cases are Regenerate requests and two are policy-edge cases.</li><li>Each case runs on the old request (<code>gpt-3.5-turbo</code>, while it exists) and on the patched request (<code>gpt-5.6-terra</code>, plus any <code>--candidate</code>).</li><li>Recorded per request: format validity as the editor sees it, per-case expectations, refusals, output length, latency, token usage (including reasoning and cache tokens), a cost estimate from <code>pricing.json</code> (OpenAI list prices read 2026-10-09; editable), and the model name the API reported.</li><li>Live mode uses only the client's <code>OPENAI_API_KEY</code>, refuses to start above <code>--max-cost-usd</code>, and asks for confirmation.</li><li>A full live run of 60 requests has a rough pre-flight estimate of about <strong>$0.31</strong> at list prices, assuming 700 output tokens per request. That is an estimate, not a measurement.</li></ul>
+<p><strong>Dry-run demo output (synthetic).</strong> Command: <code>python3 -I harness/run_harness.py --dry-run --out harness/out/dry-run</code>. Full output: <code>harness/out/dry-run/comparison.md</code>.</p>
+<blockquote><p><strong>SYNTHETIC MOCK DATA, NOT MEASUREMENTS.</strong> The mock outputs were written by hand and are identical across arms, except for seven labelled variations (old arm 3, new arm 4) injected to show that the detectors fire. Both arms get the same latency noise and token counts. The cost row is therefore list-price arithmetic only.</p></blockquote>
+<table><thead><tr><th>Metric</th><th>old</th><th>new:gpt-5.6-terra</th></tr></thead><tbody><tr><td>Requests</td><td>30</td><td>30</td></tr><tr><td>HTTP 200</td><td>30/30 (100%)</td><td>30/30 (100%)</td></tr><tr><td>Format valid</td><td>29/30 (97%)</td><td>28/30 (93%)</td></tr><tr><td>Expectations met (excl. policy-edge)</td><td>25/28 (89%)</td><td>26/28 (93%)</td></tr><tr><td>Refusals</td><td>0</td><td>1</td></tr><tr><td>Errors</td><td>0</td><td>0</td></tr><tr><td>Latency median (ms)</td><td>1279</td><td>1167</td></tr><tr><td>Latency p90 (ms)</td><td>1918</td><td>1918</td></tr><tr><td>Mean words, AI Block outputs</td><td>51.9</td><td>46.4</td></tr><tr><td>Mean output chars, all</td><td>341.4</td><td>327.8</td></tr><tr><td>Prompt tokens</td><td>10135</td><td>10135</td></tr><tr><td>Completion tokens (incl. reasoning)</td><td>2548</td><td>2494</td></tr><tr><td>Reasoning tokens</td><td>0</td><td>0</td></tr><tr><td>Est. cost, this run (USD)</td><td>0.008889</td><td>0.050198</td></tr><tr><td>Est. cost per 1,000 requests (USD)</td><td>0.2963</td><td>1.6733</td></tr><tr><td>Model reported by API</td><td>gpt-3.5-turbo-0125</td><td>gpt-5.6-terra</td></tr></tbody></table>
+<p>Flagged cases from the same dry run. Each flag corresponds to an injected variation, and every one was detected:</p>
+<table><thead><tr><th>Case</th><th>Feature</th><th>Regen</th><th>Old: valid / words / ms</th><th>new:gpt-5.6-terra: valid / words / ms</th><th>Flags</th></tr></thead><tbody><tr><td>B05</td><td>textTransformation</td><td></td><td>yes / 50 / 1482</td><td>NO / 51 / 1521</td><td>FORMAT-REGRESSION, EXPECTATION-REGRESSION</td></tr><tr><td>B09</td><td>textTransformation</td><td></td><td>yes / 65 / 1692</td><td>yes / 17 / 763</td><td>EXPECTATION-REGRESSION, LENGTH-SHIFT -74%</td></tr><tr><td>B16</td><td>textTransformation</td><td></td><td>yes / 42 / 689</td><td>NO / 0 / 605</td><td>FORMAT-REGRESSION, REFUSAL-CHANGE, LENGTH-SHIFT -100%, POLICY-EDGE</td></tr><tr><td>F05</td><td>form</td><td></td><td>yes / 4 / 2248</td><td>yes / 5 / 2248</td><td>EXPECTATION-FIXED</td></tr><tr><td>F09</td><td>form</td><td></td><td>NO / 0 / 1270</td><td>yes / 6 / 1890</td><td>FORMAT-FIXED, EXPECTATION-FIXED, COUNT-SHIFT 0-&gt;6</td></tr><tr><td>F10</td><td>form</td><td></td><td>yes / 6 / 1404</td><td>yes / 4 / 1110</td><td>COUNT-SHIFT 6-&gt;4, POLICY-EDGE</td></tr><tr><td>P02</td><td>patternsPicker</td><td></td><td>yes / 4 / 526</td><td>yes / 5 / 535</td><td>EXPECTATION-FIXED</td></tr></tbody></table>
+<p>What the patch changes on the wire, from <code>requests.jsonl</code> of the same run:</p>
+<p><strong>B01 (textTransformation)</strong></p>
+<table><thead><tr><th>Key</th><th>Old request</th><th>New request</th></tr></thead><tbody><tr><td><code>model</code></td><td><code>"gpt-3.5-turbo"</code></td><td><code>"gpt-5.6-terra"</code></td></tr><tr><td><code>reasoning_effort</code></td><td><code>(absent)</code></td><td><code>"none"</code></td></tr></tbody></table>
+<p><strong>F01 (form)</strong></p>
+<table><thead><tr><th>Key</th><th>Old request</th><th>New request</th></tr></thead><tbody><tr><td><code>function_call</code></td><td><code>{"name": "generateForm"}</code></td><td><code>(absent)</code></td></tr><tr><td><code>functions</code></td><td><code>[{"name": "generateForm", "description": "Generate form fields for the task.", "parameters...</code></td><td><code>(absent)</code></td></tr><tr><td><code>model</code></td><td><code>"gpt-3.5-turbo"</code></td><td><code>"gpt-5.6-terra"</code></td></tr><tr><td><code>reasoning_effort</code></td><td><code>(absent)</code></td><td><code>"none"</code></td></tr><tr><td><code>tool_choice</code></td><td><code>(absent)</code></td><td><code>{"type": "function", "function": {"name": "generateForm"}}</code></td></tr><tr><td><code>tools</code></td><td><code>(absent)</code></td><td><code>[{"type": "function", "function": {"name": "generateForm", "description": "Generate form f...</code></td></tr></tbody></table>
+<p><strong>P01 (patternsPicker)</strong></p>
+<table><thead><tr><th>Key</th><th>Old request</th><th>New request</th></tr></thead><tbody><tr><td><code>function_call</code></td><td><code>{"name": "pickPatterns"}</code></td><td><code>(absent)</code></td></tr><tr><td><code>functions</code></td><td><code>[{"name": "pickPatterns", "description": "Pick the patterns relevant for the page.", "para...</code></td><td><code>(absent)</code></td></tr><tr><td><code>model</code></td><td><code>"gpt-3.5-turbo"</code></td><td><code>"gpt-5.6-terra"</code></td></tr><tr><td><code>reasoning_effort</code></td><td><code>(absent)</code></td><td><code>"none"</code></td></tr><tr><td><code>tool_choice</code></td><td><code>(absent)</code></td><td><code>{"type": "function", "function": {"name": "pickPatterns"}}</code></td></tr><tr><td><code>tools</code></td><td><code>(absent)</code></td><td><code>[{"type": "function", "function": {"name": "pickPatterns", "description": "Pick the patter...</code></td></tr></tbody></table>
+<p><strong>B04 (textTransformation, regenerate)</strong></p>
+<table><thead><tr><th>Key</th><th>Old request</th><th>New request</th></tr></thead><tbody><tr><td><code>model</code></td><td><code>"gpt-3.5-turbo"</code></td><td><code>"gpt-5.6-terra"</code></td></tr><tr><td><code>reasoning_effort</code></td><td><code>(absent)</code></td><td><code>"none"</code></td></tr><tr><td><code>temperature</code></td><td><code>1.3</code></td><td><code>(absent)</code></td></tr></tbody></table>
+<p>A second dry run (<code>harness/out/dry-run-post-shutdown/</code>) replays a <strong>synthetic</strong> post-shutdown <code>model_not_found</code> for the old model. The harness marks the old arm unavailable after the first failure, skips the remaining old calls, and points to <code>--baseline</code> for comparison against a pre-shutdown run.</p>
+<p><strong>Suggested acceptance criteria for a client run:</strong></p>
+<ul><li>zero <code>NEW-ERROR</code> flags;</li><li>new-arm format validity no lower than old-arm;</li><li>every flagged case reviewed and accepted by a human;</li><li>cost per 1,000 requests reported and accepted by the client.</li></ul>
+<h2 id="7-risks-and-rollback">7. Risks and rollback</h2>
+<table><thead><tr><th>Risk</th><th>Likelihood / evidence</th><th>Mitigation</th></tr></thead><tbody><tr><td>Higher API cost per request</td><td>Certain per token: 4x input, 8x output at list price (verified prices)</td><td>Measure with the harness. <code>--candidate gpt-5.6-luna</code> tests a cheaper model ($0.20 / $1.20), but OpenAI recommends terra for gpt-3.5-turbo.</td></tr><tr><td>Output drift (length, tone, HTML habits such as code fences)</td><td>Unknown until measured</td><td>Run the harness on the client's inputs; consider <code>verbosity</code> or a prompt tweak</td></tr><tr><td><code>temperature</code> rejected by terra</td><td>Undocumented</td><td>Dropped by default; <code>--keep-sampling</code> measures whether it is accepted</td></tr><tr><td><code>reasoning_effort: none</code> lowers quality on harder prompts</td><td>Unknown</td><td><code>--swap-effort low</code> comparison; filter <code>otter_ai_openai_swap_reasoning_effort</code></td></tr><tr><td>More refusals or safeguard pauses</td><td>GPT-5.6 guide documents safeguards that can refuse or pause</td><td>Refusal text is now surfaced; policy-edge cases are in the harness</td></tr><tr><td>Key's project has no access to gpt-5.6-terra</td><td>Possible on restricted projects</td><td>The error names the model; filter <code>otter_ai_openai_key_validation_model</code></td></tr><tr><td>A plugin update overwrites a direct patch</td><td>Certain for in-place edits</td><td>Use the mu-plugin, or upstream the patch</td></tr><tr><td>Vendor ships its own fix</td><td>Likely at some point</td><td>Both are idempotent: an already-swapped model is left alone; delete the mu-plugin afterwards</td></tr><tr><td>Not changed by this patch: the page pipeline caps output at 8192 completion tokens on <code>gpt-5-mini</code> at its default effort; OpenAI's reasoning guide recommends "reserving at least 25,000 tokens" when experimenting</td><td>Observed in code, not measured</td><td>Out of scope; noted for the 11 Dec follow-up</td></tr></tbody></table>
+<p><strong>Rollback.</strong> Run <code>patch -R -p1 &lt; patch.diff</code>, or reinstall Otter 3.2.7 from WordPress.org. For the mu-plugin, delete the file. To disable only the swap: <code>add_filter( 'otter_ai_openai_model_replacements', '__return_empty_array' );</code>. No data migration is involved. After 23 Oct, a rollback brings back the broken state.</p>
+<h2 id="8-what-a-client-would-receive">8. What a client would receive</h2>
+<p>This sample corresponds to <strong>Swap &amp; Verify</strong> ($290 per repo, or per bundle of up to 3 n8n/Make/Zapier workflows). The client pays on delivery through a Payment Link sent with the PR and report, and does not pay if the delivery does not pass their review. Delivery is within 48 hours of receiving access and a staging key, weekends included.</p>
+<ol><li>A pull request into the client's repository (or a fixed workflow export) that replaces retiring model IDs with OpenAI's recommended replacement and fixes parameter and response-shape differences, as in section 5.</li><li>A 30-case before/after regression on the client's own inputs, run with the client's staging API key, which the client revokes afterwards. It covers format validity, refusals, length, latency, tokens and estimated cost, as in section 6.</li><li>A one-page quality and cost report, with flagged cases shown side by side for the client's decision.</li><li>Rollback instructions.</li></ol>
+<p>Not included:</p>
+<ul><li>any guarantee of output parity, quality, uptime or compliance (we promise a measured comparison and a PR);</li><li>production access or passwords (delivery is PR-only).</li></ul>
+<p>Client data is used only for the engagement and deleted within 7 days of delivery. Liability is capped at the fee paid. Scope is written per engagement in one paragraph, with an acceptance test, before work starts.</p>
+<p>Contact: Orkhan Karimov, Model Sunset Desk, hello@modelsunsetdesk.com, https://orkhan103.github.io/model-sunset-desk.</p>
+<h2 id="9-verification-log">9. Verification log</h2>
+<p><strong>Verified live on 2026-10-09</strong> (page copies saved under <code>launch/_untrusted/openai-docs-otter/</code>; the Otter zip and served templates under <code>launch/_untrusted/otter-blocks/</code>):</p>
+<ol><li><a href="https://developers.openai.com/api/docs/deprecations">OpenAI deprecations</a>:<ul><li><code>gpt-3.5-turbo-0125</code>, <code>gpt-3.5-turbo</code> and <code>gpt-3.5-turbo-completions</code> shut down 2026-10-23, replacement <code>gpt-5.6-terra</code>, entry announced 2026-04-22;</li><li><code>gpt-5-mini-2025-08-07</code> shuts down 2026-12-11 (replacement <code>gpt-5.6-terra</code>); plain <code>gpt-5-mini</code> is not listed;</li><li>nothing about <code>functions</code>/<code>function_call</code>.</li></ul></li><li><a href="https://developers.openai.com/api/docs/models/gpt-5.6-terra">gpt-5.6-terra</a>: effort values and default, endpoints, features, limits, prices, cache-write rule, single snapshot. The <a href="https://developers.openai.com/api/docs/models/gpt-5.6-sol">sol</a> and <a href="https://developers.openai.com/api/docs/models/gpt-5.6-luna">luna</a> pages list the same effort values.</li><li><a href="https://developers.openai.com/api/docs/models/gpt-3.5-turbo">gpt-3.5-turbo</a> and <a href="https://developers.openai.com/api/docs/models/gpt-5-mini">gpt-5-mini</a>: prices, limits, snapshots (marked Deprecated).</li><li><a href="https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create">Chat Completions create reference</a>: <code>max_tokens</code>, <code>max_completion_tokens</code>, <code>functions</code>, <code>function_call</code>, <code>tools</code>, <code>tool_choice</code>, <code>reasoning_effort</code>, <code>temperature</code>, <code>response_format</code>, <code>verbosity</code>, <code>refusal</code>, <code>finish_reason</code> and usage fields, quoted in section 4.</li><li><a href="https://developers.openai.com/api/docs/guides/latest-model">Latest-model guide</a> (GPT-6 and GPT-5.6 sections) and the <a href="https://developers.openai.com/api/docs/guides/reasoning">reasoning guide</a>: quoted in sections 4 and 7.</li><li>Otter 3.2.7 source (zip sha256 <code>c59d54bdaab37d5e4c441b83472daed2f4335600cba5db0142d4cd8c71edadc0</code>), read in full for the AI path. Served templates: one read-only GET of the endpoint the plugin itself calls, using the placeholder <code>site_url=https://example.com</code> (sha256 <code>01e20afab2e124737f631d9d48e24753b50a8acf5a87e08f7d9ca8cfda114db3</code>).</li></ol>
+<p><strong>Not verified (stated as such wherever used):</strong></p>
+<ul><li><code>temperature</code>/<code>top_p</code> support on gpt-5.6-terra;</li><li>acceptance of legacy <code>functions</code> by gpt-5.6-terra;</li><li>the exact post-shutdown error;</li><li>whether or when Themeisle updates the served templates;</li><li>whether the <code>gpt-5-mini</code> alias is re-pointed before 11 Dec;</li><li><code>tools</code> support on <code>gpt-3.5-turbo-0125</code> (prior knowledge);</li><li>the share of Otter sites on the OpenAI-key path;</li><li>behaviour inside a running WordPress;</li><li>any live model quality, latency or cost on these prompts.</li></ul>
+<p>Files in this sample: <code>README.md</code> (index), <code>report.md</code>/<code>report.html</code> (this report), <code>patch.diff</code>, <code>LICENSE-GPL-2.0.txt</code>, <code>patch-work/</code> (with <code>NOTICE.md</code>), <code>mu-plugin/</code>, <code>tests/</code>, <code>harness/</code>, <code>tools/</code>.</p>
+<footer>Produced 2026-10-09 (AI-assisted, human-reviewed). Model Sunset Desk sample; AI-assisted, human-reviewed.</footer></main></body></html>

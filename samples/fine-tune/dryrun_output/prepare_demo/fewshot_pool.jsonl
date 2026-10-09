@@ -1,0 +1,1 @@
+{"id": "ex-ed0529310d", "input": "Love your shop, keep it up!", "expected": {"intent": "other", "order_id": null, "product": null, "sentiment": "positive", "needs_human": false}, "_provenance": "split=fewshot_pool by eval_harness.py --prepare (harness written 2026-10-09 (AI-assisted, human-reviewed)); seed=20261009; source=synthetic_finetune_train.jsonl"}

@@ -1,0 +1,213 @@
+{
+  "name": "Support ticket triage (SAMPLE after: gpt-5.6-terra + error alert)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## SAMPLE - AFTER (fixed)\nSynthetic example by Model Sunset Desk. Not a client workflow.\n\n**What changed**\n1. Model `gpt-3.5-turbo` -> `gpt-5.6-terra` (OpenAI's listed replacement, deprecations page, entry 2026-04-22).\n2. Removed `temperature` (sampling settings may be rejected while a reasoning model is reasoning; we remove rather than risk it).\n3. Max tokens 350 -> 25000 (a ceiling, not a target): on reasoning models the cap also counts hidden reasoning tokens, and a low cap can return EMPTY text. Lower it after the test run.\n4. Reasoning effort set to `low` for speed and cost; compare `medium` in the test run.\n5. Retries (3 tries) and an error branch: API errors and bad AI output go to an alert, and the form caller gets HTTP 202 'queued for human review' instead of an error.\n6. New 'Validate AI output' node rejects cut-off, refused, non-JSON or wrong-shape answers.\n\nThe response to the form caller keeps the same JSON keys as before.\n\nProduced 2026-10-09 (AI-assisted, human-reviewed)",
+        "height": 520,
+        "width": 560,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        -600
+      ],
+      "id": "58acdf45-327c-5b95-806b-28e4074a9740",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "support-triage",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "72d9a21e-18f8-5a80-a5a8-63de0d9b8da5",
+      "name": "Support form webhook",
+      "webhookId": "94247a45-2e93-57ad-a39b-77cb90d81f06"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.6-terra",
+          "mode": "id"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You triage support tickets for a small SaaS product. Reply with a JSON object with exactly these keys: \"category\" (one of: billing, bug, how_to, account, other), \"urgency\" (one of: low, normal, high), \"summary\" (at most 20 words), \"reply_draft\" (at most 120 words, friendly, never promise refunds or dates).",
+              "role": "system"
+            },
+            {
+              "content": "=Subject: {{ $json.body.subject }}\nCustomer plan: {{ $json.body.plan }}\nMessage:\n{{ $json.body.message }}",
+              "role": "user"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "maxTokens": 25000,
+          "reasoning_effort": "low"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        240,
+        0
+      ],
+      "id": "5d70afbb-ead7-53c4-bd12-1c8901adcba8",
+      "name": "Classify and draft reply",
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Added during the gpt-3.5-turbo -> gpt-5.6-terra migration.\n// A shut-down model fails loudly. A replacement model can fail quietly:\n// empty text, cut-off JSON, a refusal, or different keys. This node turns\n// those quiet failures into errors so they reach the alert branch.\nconst ALLOWED_CATEGORY = ['billing', 'bug', 'how_to', 'account', 'other'];\nconst ALLOWED_URGENCY = ['low', 'normal', 'high'];\n\nconst choice = $json;\nif (choice.finish_reason === 'length') {\n  throw new Error('AI step stopped at the token limit (finish_reason=length). Reasoning tokens count toward Maximum Number of Tokens; raise it.');\n}\nif (choice.message && choice.message.refusal) {\n  throw new Error('Model refused: ' + String(choice.message.refusal).slice(0, 200));\n}\nlet out = choice.message ? choice.message.content : undefined;\nif (out === null || out === undefined || (typeof out === 'string' && out.trim() === '')) {\n  throw new Error('AI output is empty (no text returned).');\n}\nif (typeof out === 'string') {\n  try {\n    out = JSON.parse(out);\n  } catch (e) {\n    throw new Error('AI output is not valid JSON: ' + out.slice(0, 200));\n  }\n}\nif (!out || typeof out !== 'object' || Array.isArray(out)) {\n  throw new Error('AI output is empty or not a JSON object.');\n}\nconst problems = [];\nif (!ALLOWED_CATEGORY.includes(out.category)) problems.push('category=' + JSON.stringify(out.category));\nif (!ALLOWED_URGENCY.includes(out.urgency)) problems.push('urgency=' + JSON.stringify(out.urgency));\nif (typeof out.summary !== 'string' || out.summary.trim() === '') problems.push('summary missing');\nif (typeof out.reply_draft !== 'string' || out.reply_draft.trim() === '') problems.push('reply_draft missing');\nif (problems.length > 0) {\n  throw new Error('AI output failed the schema check: ' + problems.join('; '));\n}\nreturn {\n  json: {\n    category: out.category,\n    urgency: out.urgency,\n    summary: out.summary.trim(),\n    reply_draft: out.reply_draft.trim()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        -100
+      ],
+      "id": "9e4f4b95-7e17-5c24-a037-3d955c4f1abd",
+      "name": "Validate AI output",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        -100
+      ],
+      "id": "9f6b3292-2321-5f6c-a97d-4fed667117a5",
+      "name": "Return triage result"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://replace-with-your-alert-webhook.invalid/",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: '[n8n] ' + $workflow.name + ': AI triage failed; ticket \"' + ($('Support form webhook').first().json.body.subject || '(no subject)') + '\" needs a human. Error: ' + (typeof $json.error === 'object' && $json.error !== null ? ($json.error.message || JSON.stringify($json.error)) : String($json.error || 'unknown')) + ' | execution ' + $execution.id }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        160
+      ],
+      "id": "25e29646-cd48-5286-9b92-c9f7a35c07dd",
+      "name": "Alert: AI step failed",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"queued_for_human_review\"\n}",
+        "options": {
+          "responseCode": 202
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        160
+      ],
+      "id": "937ad766-1023-5f8f-ac9c-4de0dc62752b",
+      "name": "Fallback: queued for human"
+    }
+  ],
+  "connections": {
+    "Support form webhook": {
+      "main": [
+        [
+          {
+            "node": "Classify and draft reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify and draft reply": {
+      "main": [
+        [
+          {
+            "node": "Validate AI output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Alert: AI step failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate AI output": {
+      "main": [
+        [
+          {
+            "node": "Return triage result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Alert: AI step failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert: AI step failed": {
+      "main": [
+        [
+          {
+            "node": "Fallback: queued for human",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

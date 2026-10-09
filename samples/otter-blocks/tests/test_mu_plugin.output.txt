@@ -1,0 +1,24 @@
+== php:5.6-cli
+No syntax errors detected in mu-plugin/otter-model-sunset.php
+PASS 0 hooks registered
+PASS 1 payload: swap, effort none, tools, temperature dropped
+PASS 2 response: tool_calls mapped to function_call for 3.2.7 parser
+PASS 3 response: refusal surfaced as error
+PASS 4 response: plain content untouched
+PASS 5 key check on Otter route: model swapped + effort none
+PASS 6 other REST routes untouched
+PASS 7 non-OpenAI URLs untouched
+
+8 checks, 0 failed (PHP 5.6.40)
+== php:8.3-cli
+No syntax errors detected in mu-plugin/otter-model-sunset.php
+PASS 0 hooks registered
+PASS 1 payload: swap, effort none, tools, temperature dropped
+PASS 2 response: tool_calls mapped to function_call for 3.2.7 parser
+PASS 3 response: refusal surfaced as error
+PASS 4 response: plain content untouched
+PASS 5 key check on Otter route: model swapped + effort none
+PASS 6 other REST routes untouched
+PASS 7 non-OpenAI URLs untouched
+
+8 checks, 0 failed (PHP 8.3.35)

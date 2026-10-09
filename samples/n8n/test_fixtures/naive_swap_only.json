@@ -1,0 +1,122 @@
+{
+  "name": "fixture: naive fix (model string swapped only). Produced 2026-10-09 (AI-assisted, human-reviewed)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## FIXTURE - naive fix\nOnly the model string was changed. Options and error handling were left as they were.\n\nProduced 2026-10-09 (AI-assisted, human-reviewed)",
+        "height": 300,
+        "width": 420,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -360
+      ],
+      "id": "96ec4582-614e-5011-a2b0-b4b14b15848e",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "support-triage",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "72d9a21e-18f8-5a80-a5a8-63de0d9b8da5",
+      "name": "Support form webhook",
+      "webhookId": "94247a45-2e93-57ad-a39b-77cb90d81f06"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.6-terra",
+          "mode": "id"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You triage support tickets for a small SaaS product. Reply with a JSON object with exactly these keys: \"category\" (one of: billing, bug, how_to, account, other), \"urgency\" (one of: low, normal, high), \"summary\" (at most 20 words), \"reply_draft\" (at most 120 words, friendly, never promise refunds or dates).",
+              "role": "system"
+            },
+            {
+              "content": "=Subject: {{ $json.body.subject }}\nCustomer plan: {{ $json.body.plan }}\nMessage:\n{{ $json.body.message }}",
+              "role": "user"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {
+          "maxTokens": 350,
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        240,
+        0
+      ],
+      "id": "5d70afbb-ead7-53c4-bd12-1c8901adcba8",
+      "name": "Classify and draft reply",
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.message.content }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        0
+      ],
+      "id": "9f6b3292-2321-5f6c-a97d-4fed667117a5",
+      "name": "Return triage result"
+    }
+  ],
+  "connections": {
+    "Support form webhook": {
+      "main": [
+        [
+          {
+            "node": "Classify and draft reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify and draft reply": {
+      "main": [
+        [
+          {
+            "node": "Return triage result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

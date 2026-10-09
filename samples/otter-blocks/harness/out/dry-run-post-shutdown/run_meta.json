@@ -1,0 +1,20 @@
+{
+ "harness_version": "1.0.0",
+ "harness_authored_by": "Model Sunset Desk",
+ "harness_authored_on": "2026-10-09",
+ "run_started_utc": "2026-10-09T16:57:27+00:00",
+ "mode": "dry-run",
+ "cases": 3,
+ "arms": [
+  "old",
+  "new:gpt-5.6-terra"
+ ],
+ "templates": "templates.sample.json",
+ "sample_templates": true,
+ "pricing_file": "pricing.json",
+ "swap_effort": "none",
+ "keep_sampling": false,
+ "mocks": "mocks/mock_responses_post_shutdown.jsonl",
+ "old_arm_unavailable": "old model gpt-3.5-turbo unavailable: (synthetic) The model `gpt-3.5-turbo` does not exist or you do not have access to it.",
+ "estimated_spend_usd": 0.0
+}

@@ -1,0 +1,5 @@
+$ python3 -I run_harness.py --dry-run --out out/dry-run
+Wrote out/dry-run (results.jsonl, requests.jsonl, run_meta.json, comparison.md)
+
+$ python3 -I run_harness.py --dry-run --mocks mocks/mock_responses_post_shutdown.jsonl --only B01,F01,P01 --out out/dry-run-post-shutdown
+Wrote out/dry-run-post-shutdown (results.jsonl, requests.jsonl, run_meta.json, comparison.md)

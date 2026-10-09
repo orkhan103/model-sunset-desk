@@ -1,0 +1,197 @@
+{
+ "_about": [
+  "Produced 2026-10-09 (AI-assisted, human-reviewed).",
+  "SAMPLE templates for demonstrating the harness. They mirror the STRUCTURE of the four prompt templates Otter 3.2.7 fetched from api.themeisle.com/templates-cloud/otter-prompts on 2026-10-09 (otter_name, model pin 'gpt-3.5-turbo', message roles, {INSERT_TASK}/{ACTION} placeholders, forced functions generateForm/pickPatterns and their parameter shapes, pattern slugs).",
+  "The prompt WORDING here is paraphrased, not Themeisle's text. For a client engagement, load the site's real cached templates with --templates (see README.md); results on these samples are not evidence about the production prompts.",
+  "The contentGenerator template is omitted: Otter 3.2.7's editor JS does not reference it."
+ ],
+ "pattern_slugs": {
+  "free": [
+   "author-box",
+   "border-icon-features",
+   "border-pricing-table",
+   "call-to-action",
+   "content-with-features",
+   "hero-area-with-button",
+   "columns-with-icon-features",
+   "columns-with-image-features",
+   "text-with-image-columns",
+   "contact-details-and-form",
+   "image-and-text-over-dark-background",
+   "icons-and-text",
+   "columns-with-flip-boxes",
+   "team-members",
+   "large-quote",
+   "testimonial-columns",
+   "testimonial-with-inline-image",
+   "gallery",
+   "posts-list-with-border",
+   "countdown-special-offer-row"
+  ],
+  "pro": [
+   "grid-portfolio-with-two-columns-and-a-description",
+   "text-with-gallery",
+   "centered-subscription-form",
+   "portfolio-with-alternating-layout-and-header",
+   "contact-form-with-a-full-width-map",
+   "posts-grid-with-a-featured-post-over-dark-background",
+   "two-columns-posts-section-and-a-description",
+   "contact-form-with-map-and-icons",
+   "posts-list-with-border",
+   "two-columns-subscribe-form",
+   "contact-form-with-text-and-image-on-two-columns",
+   "pricing-with-a-single-plan",
+   "two-rows-with-text-and-images",
+   "countdown-special-offer-column",
+   "product-review-in-plain-style",
+   "wide-header-with-text-and-a-button",
+   "countdown-special-offer-row",
+   "product-review-over-dark-background",
+   "slider-with-three-slides",
+   "four-columns-with-numbers-and-text-over-dark-background",
+   "team-members-section-with-description",
+   "call-to-action-with-a-light-box"
+  ]
+ },
+ "templates": [
+  {
+   "otter_name": "form",
+   "model": "gpt-3.5-turbo",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You produce arguments for the 'generateForm' function only, with no explanation. Keep placeholders short and example-like. Add choices only for radio, select or checkbox fields. Write labels, placeholders, help text and choices in the language of the task. File, checkbox, select and radio fields get no placeholder. Only file fields get allowedFileTypes, as MIME types. Use the matching input type (email, date, tel, and so on). Mark a field required only when the task makes it necessary; terms and conditions are always required."
+    },
+    {
+     "role": "user",
+     "content": "Produce only the arguments for the 'generateForm' function for this task: {INSERT_TASK}"
+    }
+   ],
+   "functions": [
+    {
+     "name": "generateForm",
+     "description": "Generate form fields for the task.",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "fields": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "label": {
+           "type": "string",
+           "description": "Field label."
+          },
+          "type": {
+           "type": "string",
+           "description": "HTML input type.",
+           "default": "text"
+          },
+          "placeholder": {
+           "type": "string",
+           "description": "Example value."
+          },
+          "helpText": {
+           "type": "string",
+           "description": "Short instruction."
+          },
+          "choices": {
+           "type": "array",
+           "items": {
+            "type": "string"
+           },
+           "uniqueItems": true,
+           "description": "Options."
+          },
+          "allowedFileTypes": {
+           "type": "array",
+           "items": {
+            "type": "string"
+           },
+           "uniqueItems": true,
+           "description": "Allowed MIME types."
+          },
+          "required": {
+           "type": "boolean",
+           "description": "Whether the field is required.",
+           "default": false
+          }
+         },
+         "required": [
+          "label",
+          "type"
+         ]
+        },
+        "uniqueItems": true,
+        "minItems": 1
+       }
+      }
+     }
+    }
+   ],
+   "function_call": {
+    "name": "generateForm"
+   }
+  },
+  {
+   "otter_name": "textTransformation",
+   "model": "gpt-3.5-turbo",
+   "otter_action_prompt": "Treat the given text as instructions and write content that follows them",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You are an experienced conversion copywriter who replies with HTML only. Allowed tags: p, h1, h2, h3, h4, ul, li, table, tr, td, th, strong, em, b, i, u, a, img. Keep any HTML tags already present in the given text. Never use head, body or footer tags and never add explanations. The HTML is converted into WordPress blocks."
+    },
+    {
+     "role": "user",
+     "content": "I will give you a text. Your task: {ACTION}. The text is: {INSERT_TASK}."
+    }
+   ]
+  },
+  {
+   "otter_name": "patternsPicker",
+   "model": "gpt-3.5-turbo",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You are a UI/UX designer choosing WordPress block patterns for a page. Pick patterns from this list that fit the requirement; hero patterns usually open a page and contact patterns usually close it.\nPatterns:\n- `author-box`\n- `border-icon-features`\n- `border-pricing-table`\n- `call-to-action`\n- `content-with-features`\n- `hero-area-with-button`\n- `columns-with-icon-features`\n- `columns-with-image-features`\n- `text-with-image-columns`\n- `contact-details-and-form`\n- `image-and-text-over-dark-background`\n- `icons-and-text`\n- `columns-with-flip-boxes`\n- `team-members`\n- `large-quote`\n- `testimonial-columns`\n- `testimonial-with-inline-image`\n- `gallery`\n- `posts-list-with-border`\n- `countdown-special-offer-row`"
+    },
+    {
+     "role": "user",
+     "content": "From the patterns provided, return the recommended pattern slugs as function arguments for a page about: {INSERT_TASK}"
+    }
+   ],
+   "otter_pro_addon": [
+    {
+     "role": "system",
+     "content": "Additional patterns:\n- `grid-portfolio-with-two-columns-and-a-description`\n- `text-with-gallery`\n- `centered-subscription-form`\n- `portfolio-with-alternating-layout-and-header`\n- `contact-form-with-a-full-width-map`\n- `posts-grid-with-a-featured-post-over-dark-background`\n- `two-columns-posts-section-and-a-description`\n- `contact-form-with-map-and-icons`\n- `posts-list-with-border`\n- `two-columns-subscribe-form`\n- `contact-form-with-text-and-image-on-two-columns`\n- `pricing-with-a-single-plan`\n- `two-rows-with-text-and-images`\n- `countdown-special-offer-column`\n- `product-review-in-plain-style`\n- `wide-header-with-text-and-a-button`\n- `countdown-special-offer-row`\n- `product-review-over-dark-background`\n- `slider-with-three-slides`\n- `four-columns-with-numbers-and-text-over-dark-background`\n- `team-members-section-with-description`\n- `call-to-action-with-a-light-box`"
+    }
+   ],
+   "functions": [
+    {
+     "name": "pickPatterns",
+     "description": "Pick the patterns relevant for the page.",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "slugs": {
+        "type": "array",
+        "items": {
+         "type": "string",
+         "description": "Pattern slug"
+        },
+        "description": "Picked pattern slugs",
+        "uniqueItems": true,
+        "minItems": 5
+       }
+      }
+     }
+    }
+   ],
+   "function_call": {
+    "name": "pickPatterns"
+   }
+  }
+ ]
+}

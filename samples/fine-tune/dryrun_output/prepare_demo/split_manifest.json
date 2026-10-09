@@ -1,0 +1,37 @@
+{
+  "produced_by": "eval_harness.py --prepare (harness written 2026-10-09 (AI-assisted, human-reviewed))",
+  "source_file": "synthetic_finetune_train.jsonl",
+  "source_sha256": "be6fa337be5ec8280e9fd131323b46b179cc60e9f54d941cfb20cee8772705ba",
+  "source_rows": 27,
+  "skipped_rows": 0,
+  "exact_duplicates_removed": 1,
+  "conflicting_duplicates": [],
+  "unique_examples": 26,
+  "label_field": "intent",
+  "seed": 20261009,
+  "heldout_frac": 0.2,
+  "fewshot_frac": 0.1,
+  "per_label": {
+    "billing_issue": 4,
+    "cancel_order": 3,
+    "order_status": 5,
+    "other": 7,
+    "product_question": 3,
+    "return_request": 4
+  },
+  "files": {
+    "heldout.jsonl": {
+      "rows": 6,
+      "sha256": "1ec25985324a4efcc0dc1b90023e7e52d03fdcda3174b28c935c3f58f33a2b5d"
+    },
+    "dev.jsonl": {
+      "rows": 19,
+      "sha256": "3934184e4c4c1366262eb5ad810ad5d5e6dc8df937871430e71523f3be7668a8"
+    },
+    "fewshot_pool.jsonl": {
+      "rows": 1,
+      "sha256": "0f3e4264938aedeef891f9b08197027d225cb837f24b92920756e4e2db8596e5"
+    }
+  },
+  "rule": "heldout.jsonl is frozen now: never used for prompt writing or few-shot selection."
+}

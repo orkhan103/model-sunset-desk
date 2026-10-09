@@ -1,0 +1,291 @@
+Swap & Verify sample patch: otter-blocks 3.2.7 (WordPress.org latest-stable, zip sha256 c59d54bdaab37d5e4c441b83472daed2f4335600cba5db0142d4cd8c71edadc0)
+Produced 2026-10-09 (AI-assisted, human-reviewed). AI-assisted, human review required before use. Not submitted upstream.
+Moves Otter's OpenAI-key path off gpt-3.5-turbo (shutdown 2026-10-23 per https://developers.openai.com/api/docs/deprecations)
+to the OpenAI-recommended replacement gpt-5.6-terra, with filters for every default. Apply from the plugin root:  patch -p1 < patch.diff
+Hunk-by-hunk explanation: report.md, section "The patch".
+Licence: GPL-2.0-or-later, the licence of Otter Blocks (original (c) Themeisle). Full text: LICENSE-GPL-2.0.txt; notice: patch-work/NOTICE.md.
+Each changed file carries a dated one-line modification notice in its header comment (GPL-2.0 section 2(a)).
+Regenerated 2026-10-09 from patch-work/ with:  cd patch-work && diff -ru a b
+
+diff -ru a/inc/server/class-otter-openai-backend.php b/inc/server/class-otter-openai-backend.php
+--- a/inc/server/class-otter-openai-backend.php	2026-10-09 12:39:29.526198481 -0400
++++ b/inc/server/class-otter-openai-backend.php	2026-10-09 13:53:28.537960097 -0400
+@@ -1,6 +1,7 @@
+ <?php
+ /**
+  * Otter OpenAI backend strategy.
++ * Modified 2026-10-09 by Model Sunset Desk: swaps OpenAI models retiring 2026-10-23 for the recommended replacements (adapt_payload) and parses tool_calls and refusals; original © Themeisle, GPL-2.0-or-later
+  *
+  * @package ThemeIsle\GutenbergBlocks\Server
+  */
+@@ -20,6 +21,173 @@
+ 	const BASE_URL = 'https://api.openai.com/v1/chat/completions';
+ 
+ 	/**
++	 * OpenAI chat models shut down on 2026-10-23, mapped to the replacement
++	 * OpenAI recommends for each.
++	 *
++	 * Source: https://developers.openai.com/api/docs/deprecations (entry
++	 * announced 2026-04-22). Filter with `otter_ai_openai_model_replacements`.
++	 *
++	 * @var array<string, string>
++	 */
++	const RETIRING_MODEL_REPLACEMENTS = array(
++		'gpt-3.5-turbo'           => 'gpt-5.6-terra',
++		'gpt-3.5-turbo-0125'      => 'gpt-5.6-terra',
++		'o4-mini'                 => 'gpt-5.6-terra',
++		'o4-mini-2025-04-16'      => 'gpt-5.6-terra',
++		'gpt-4'                   => 'gpt-5.6-sol',
++		'gpt-4-0613'              => 'gpt-5.6-sol',
++		'gpt-4-turbo'             => 'gpt-5.6-sol',
++		'gpt-4-turbo-2024-04-09'  => 'gpt-5.6-sol',
++		'gpt-4-1106-preview'      => 'gpt-5.6-sol',
++		'gpt-4o-2024-05-13'       => 'gpt-5.6-sol',
++		'o1'                      => 'gpt-5.6-sol',
++		'o1-2024-12-17'           => 'gpt-5.6-sol',
++		'o3-mini'                 => 'gpt-5.6-sol',
++		'o3-mini-2025-01-31'      => 'gpt-5.6-sol',
++		'gpt-4.1-nano'            => 'gpt-5.6-luna',
++		'gpt-4.1-nano-2025-04-14' => 'gpt-5.6-luna',
++	);
++
++	/**
++	 * Reasoning effort sent after swapping a retiring NON-reasoning model
++	 * (gpt-3.5/gpt-4 family). GPT-5.6 models default to `medium`; `none` keeps
++	 * the latency and token profile closest to the model being replaced.
++	 *
++	 * @var string
++	 */
++	const SWAP_REASONING_EFFORT = 'none';
++
++	/**
++	 * Map a retiring model ID to its recommended replacement.
++	 *
++	 * @param string $model Model ID.
++	 * @return string The replacement, or the input unchanged when it is not retiring.
++	 */
++	public static function get_replacement_model( $model ) {
++		/**
++		 * Filters the retiring-model => replacement map.
++		 *
++		 * Return an empty array to disable the automatic swap.
++		 *
++		 * @param array<string, string> $replacements Retiring model ID => replacement model ID.
++		 */
++		$replacements = apply_filters( 'otter_ai_openai_model_replacements', self::RETIRING_MODEL_REPLACEMENTS );
++
++		if ( is_array( $replacements ) && isset( $replacements[ $model ] ) && is_string( $replacements[ $model ] ) && '' !== $replacements[ $model ] ) {
++			return $replacements[ $model ];
++		}
++
++		return $model;
++	}
++
++	/**
++	 * Model used for the one-off API key check in the Otter dashboard.
++	 *
++	 * @return string
++	 */
++	public static function get_key_validation_model() {
++		/**
++		 * Filters the model used to validate a newly saved OpenAI API key.
++		 *
++		 * @param string $model Model ID. Defaults to the gpt-3.5-turbo replacement.
++		 */
++		return (string) apply_filters( 'otter_ai_openai_key_validation_model', self::get_replacement_model( 'gpt-3.5-turbo' ) );
++	}
++
++	/**
++	 * Whether the model documents `reasoning_effort: none` (GPT-5.6 family).
++	 *
++	 * @param string $model Model ID.
++	 * @return bool
++	 */
++	public static function supports_reasoning_effort_none( $model ) {
++		return 1 === preg_match( '/^gpt-5\.6(-(sol|terra|luna))?$/', (string) $model );
++	}
++
++	/**
++	 * Adapt an OpenAI-shaped payload to the model it will be sent to.
++	 *
++	 * 1. Swaps retiring model IDs for their recommended replacement.
++	 * 2. Sets `reasoning_effort` after a swap from a non-reasoning model.
++	 * 3. Drops sampling parameters (`temperature`, `top_p`, logprobs) for
++	 *    reasoning-family models unless a site opts back in.
++	 * 4. Converts deprecated `functions`/`function_call` to `tools`/`tool_choice`.
++	 *
++	 * @param array<string, mixed> $payload The OpenAI-format payload.
++	 * @return array<string, mixed>
++	 */
++	public static function adapt_payload( array $payload ) {
++		$requested = isset( $payload['model'] ) && is_string( $payload['model'] ) ? $payload['model'] : '';
++		$model     = '' !== $requested ? self::get_replacement_model( $requested ) : '';
++
++		if ( '' !== $model && $model !== $requested ) {
++			$payload['model'] = $model;
++
++			if ( ! isset( $payload['reasoning_effort'] ) && 1 !== preg_match( '/^o[1-9]/', $requested ) && self::supports_reasoning_effort_none( $model ) ) {
++				/**
++				 * Filters the reasoning effort used after a retiring non-reasoning model is swapped.
++				 *
++				 * Return '' to omit `reasoning_effort` and use the model default.
++				 *
++				 * @param string               $effort    Reasoning effort.
++				 * @param string               $requested The retiring model ID that was requested.
++				 * @param string               $model     The replacement model ID.
++				 * @param array<string, mixed> $payload   The payload.
++				 */
++				$effort = (string) apply_filters( 'otter_ai_openai_swap_reasoning_effort', self::SWAP_REASONING_EFFORT, $requested, $model, $payload );
++
++				if ( '' !== $effort ) {
++					$payload['reasoning_effort'] = $effort;
++				}
++			}
++		}
++
++		if ( 1 === preg_match( '/^(gpt-5|o[1-9])/', $model ) ) {
++			/**
++			 * Filters whether sampling parameters are kept for reasoning-family models.
++			 *
++			 * @param bool                 $keep    Keep `temperature`, `top_p`, `logprobs`, `top_logprobs`. Default false.
++			 * @param string               $model   The model ID.
++			 * @param array<string, mixed> $payload The payload.
++			 */
++			if ( ! apply_filters( 'otter_ai_openai_keep_sampling_params', false, $model, $payload ) ) {
++				unset( $payload['temperature'], $payload['top_p'], $payload['logprobs'], $payload['top_logprobs'] );
++			}
++		}
++
++		if ( isset( $payload['functions'] ) && is_array( $payload['functions'] ) && ! isset( $payload['tools'] ) ) {
++			$tools = array();
++
++			foreach ( $payload['functions'] as $function ) {
++				if ( is_array( $function ) && ! empty( $function['name'] ) ) {
++					$tools[] = array(
++						'type'     => 'function',
++						'function' => $function,
++					);
++				}
++			}
++
++			if ( ! empty( $tools ) ) {
++				$function_call = isset( $payload['function_call'] ) ? $payload['function_call'] : null;
++
++				if ( is_array( $function_call ) && ! empty( $function_call['name'] ) ) {
++					$payload['tool_choice'] = array(
++						'type'     => 'function',
++						'function' => array( 'name' => (string) $function_call['name'] ),
++					);
++				} elseif ( 'none' === $function_call || 'auto' === $function_call ) {
++					$payload['tool_choice'] = $function_call;
++				}
++
++				$payload['tools'] = $tools;
++				unset( $payload['functions'], $payload['function_call'] );
++			}
++		}
++
++		return $payload;
++	}
++
++	/**
+ 	 * Whether an Otter OpenAI API key is configured.
+ 	 *
+ 	 * @return bool
+@@ -75,6 +243,10 @@
+ 			$payload['model'] = $model;
+ 		}
+ 
++		// Prompt templates are fetched remotely and cached for a week, so they
++		// can still pin a model OpenAI has shut down. Adapt after all filters ran.
++		$payload = self::adapt_payload( $payload );
++
+ 		// GPT-5/o-series models reject `max_tokens`; `max_completion_tokens` is
+ 		// accepted by all current chat-completions models.
+ 		if ( isset( $payload['max_tokens'] ) ) {
+@@ -179,13 +351,22 @@
+ 		$content = '';
+ 		$format  = 'text';
+ 
+-		if ( isset( $message['function_call'] ) && is_array( $message['function_call'] ) && isset( $message['function_call']['arguments'] ) ) {
++		if ( isset( $message['tool_calls'][0]['function']['arguments'] ) && is_string( $message['tool_calls'][0]['function']['arguments'] ) ) {
++			// `tools`/`tool_choice` response shape (see adapt_payload()).
++			$content = $message['tool_calls'][0]['function']['arguments'];
++			$format  = 'json';
++		} elseif ( isset( $message['function_call'] ) && is_array( $message['function_call'] ) && isset( $message['function_call']['arguments'] ) ) {
+ 			$content = (string) $message['function_call']['arguments'];
+ 			$format  = 'json';
+ 		} elseif ( isset( $message['content'] ) ) {
+ 			$content = (string) $message['content'];
+ 		}
+ 
++		if ( '' === $content && isset( $message['refusal'] ) && is_string( $message['refusal'] ) && '' !== $message['refusal'] ) {
++			// Surface the model's refusal instead of a generic, auto-retried 502.
++			return $this->error_response( 'model_refusal', $message['refusal'], 422 );
++		}
++
+ 		if ( '' === $content ) {
+ 			return $this->error_response( 'empty_response', __( 'OpenAI returned an empty response. Please try again.', 'otter-blocks' ), 502 );
+ 		}
+diff -ru a/inc/server/class-prompt-server.php b/inc/server/class-prompt-server.php
+--- a/inc/server/class-prompt-server.php	2026-10-09 12:39:29.529688186 -0400
++++ b/inc/server/class-prompt-server.php	2026-10-09 13:53:28.553136370 -0400
+@@ -1,6 +1,7 @@
+ <?php
+ /**
+  * Prompt server logic.
++ * Modified 2026-10-09 by Model Sunset Desk: the API-key check no longer hard-codes gpt-3.5-turbo (uses its replacement with reasoning_effort none); original © Themeisle, GPL-2.0-or-later
+  *
+  * @package ThemeIsle\GutenbergBlocks\Server
+  */
+@@ -131,6 +132,27 @@
+ 			return new \WP_REST_Response( array( 'message' => __( 'API key saved.', 'otter-blocks' ) ), 200 );
+ 		}
+ 
++		// gpt-3.5-turbo shuts down on 2026-10-23; validate with its replacement.
++		$validation_model = Otter_OpenAI_Backend::get_key_validation_model();
++		$validation_body  = array(
++			'model'    => $validation_model,
++			'messages' => array(
++				array(
++					'role'    => 'system',
++					'content' => 'You are a helpful assistant.',
++				),
++				array(
++					'role'    => 'user',
++					'content' => 'Hello!',
++				),
++			),
++		);
++
++		// GPT-5.6 models reason by default (`medium`); a key check needs none.
++		if ( Otter_OpenAI_Backend::supports_reasoning_effort_none( $validation_model ) ) {
++			$validation_body['reasoning_effort'] = 'none';
++		}
++
+ 		$response = wp_remote_post(
+ 			self::BASE_URL,
+ 			array(
+@@ -139,21 +161,7 @@
+ 					'Authorization' => 'Bearer ' . $api_key,
+ 					'Content-Type'  => 'application/json',
+ 				),
+-				'body'    => wp_json_encode(
+-					array(
+-						'model'    => 'gpt-3.5-turbo',
+-						'messages' => array(
+-							array(
+-								'role'    => 'system',
+-								'content' => 'You are a helpful assistant.',
+-							),
+-							array(
+-								'role'    => 'user',
+-								'content' => 'Hello!',
+-							),
+-						),
+-					)
+-				),
++				'body'    => wp_json_encode( $validation_body ),
+ 				'timeout' => 2 * MINUTE_IN_SECONDS,
+ 			)
+ 		);

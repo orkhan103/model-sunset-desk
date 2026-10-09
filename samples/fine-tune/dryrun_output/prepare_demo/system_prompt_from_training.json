@@ -1,0 +1,6 @@
+{
+  "_provenance": "most common system prompt in synthetic_finetune_train.jsonl, extracted by eval_harness.py --prepare (harness written 2026-10-09 (AI-assisted, human-reviewed))",
+  "system_prompt": "Classify tea-shop customer e-mails into JSON.",
+  "rows_using_it": 27,
+  "distinct_system_prompts": 1
+}

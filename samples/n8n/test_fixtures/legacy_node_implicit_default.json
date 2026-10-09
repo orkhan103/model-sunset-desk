@@ -1,0 +1,1 @@
+{"name":"fixture: legacy OpenAI node, chat resource, model field absent (Produced 2026-10-09 (AI-assisted, human-reviewed))","nodes":[{"parameters":{"resource":"chat","prompt":{"messages":[{"content":"Summarise: {{ $json.text }}"}]}},"type":"n8n-nodes-base.openAi","typeVersion":1.1,"position":[0,0],"id":"a1","name":"OpenAI legacy"}],"connections":{}}

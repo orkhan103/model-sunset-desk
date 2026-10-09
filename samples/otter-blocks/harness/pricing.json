@@ -1,0 +1,18 @@
+{
+  "_about": [
+    "Produced 2026-10-09 (AI-assisted, human-reviewed).",
+    "USD per 1M tokens, OpenAI standard (non-Batch, non-Flex) list prices, read live on 2026-10-09 from the model pages linked per row.",
+    "This is an INPUT you can edit: if your organisation has different pricing, change the numbers; the report prints which file and values were used.",
+    "cache_write: GPT-5.6 model pages state 'Cache writes are billed at 1.25x the uncached input token rate'; the value below is 1.25 x input. null = not listed for that model.",
+    "Reasoning tokens are billed as output tokens (OpenAI reasoning guide) and are already included in usage.completion_tokens.",
+    "Prompts over 272K input tokens are billed at 2x input / 1.5x output on GPT-5.6 (model page); the harness flags but does not price that case (Otter prompts are far smaller)."
+  ],
+  "models": {
+    "gpt-3.5-turbo":      {"input": 0.50, "cached_input": null,  "cache_write": null,  "output": 1.50,  "source": "https://developers.openai.com/api/docs/models/gpt-3.5-turbo"},
+    "gpt-3.5-turbo-0125": {"input": 0.50, "cached_input": null,  "cache_write": null,  "output": 1.50,  "source": "https://developers.openai.com/api/docs/models/gpt-3.5-turbo"},
+    "gpt-5.6-terra":      {"input": 2.00, "cached_input": 0.20,  "cache_write": 2.50,  "output": 12.00, "source": "https://developers.openai.com/api/docs/models/gpt-5.6-terra"},
+    "gpt-5.6-luna":       {"input": 0.20, "cached_input": 0.02,  "cache_write": 0.25,  "output": 1.20,  "source": "https://developers.openai.com/api/docs/models/gpt-5.6-luna"},
+    "gpt-5.6-sol":        {"input": 4.00, "cached_input": 0.40,  "cache_write": 5.00,  "output": 20.00, "source": "https://developers.openai.com/api/docs/models/gpt-5.6-sol (pricing page notes Sol promotional pricing at least through 2026-11-21)"},
+    "gpt-5-mini":         {"input": 0.25, "cached_input": 0.025, "cache_write": null,  "output": 2.00,  "source": "https://developers.openai.com/api/docs/models/gpt-5-mini"}
+  }
+}

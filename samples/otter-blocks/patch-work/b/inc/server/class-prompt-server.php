@@ -1,0 +1,453 @@
+<?php
+/**
+ * Prompt server logic.
+ * Modified 2026-10-09 by Model Sunset Desk: the API-key check no longer hard-codes gpt-3.5-turbo (uses its replacement with reasoning_effort none); original © Themeisle, GPL-2.0-or-later
+ *
+ * @package ThemeIsle\GutenbergBlocks\Server
+ */
+
+namespace ThemeIsle\GutenbergBlocks\Server;
+
+/**
+ * Class Prompt_Server
+ */
+class Prompt_Server {
+
+	/**
+	 * The main instance var.
+	 *
+	 * @var Prompt_Server|null
+	 */
+	public static $instance = null;
+
+	/**
+	 * Rest route namespace.
+	 *
+	 * @var string
+	 */
+	public $namespace = 'otter/';
+
+	/**
+	 * Rest route version.
+	 *
+	 * @var string
+	 */
+	public $version = 'v1';
+
+	/**
+	 * Transient name for prompts.
+	 *
+	 * @var string
+	 */
+	public $transient_prompts = 'otter_prompts';
+
+	/**
+	 * Timeout for prompts request.
+	 *
+	 * @var string
+	 */
+	public $timeout_transient = 'otter_prompts_timeout';
+
+	/**
+	 * OpenAI Endpoint.
+	 *
+	 * @var string
+	 */
+	const BASE_URL = Otter_OpenAI_Backend::BASE_URL;
+
+	/**
+	 * Initialize the class
+	 */
+	public function init() {
+		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
+	}
+
+	/**
+	 * Register REST API route
+	 */
+	public function register_routes() {
+		$namespace = $this->namespace . $this->version;
+
+		register_rest_route(
+			$namespace,
+			'/openai/key',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'save_api_key' ),
+					'permission_callback' => function () {
+						return current_user_can( 'manage_options' );
+					},
+				),
+			)
+		);
+
+		register_rest_route(
+			$namespace,
+			'/openai/prompt',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_prompts' ),
+					'permission_callback' => function () {
+						return current_user_can( 'edit_posts' );
+					},
+				),
+			)
+		);
+
+		register_rest_route(
+			$namespace,
+			'/openai/generate',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'forward_prompt' ),
+					'permission_callback' => function () {
+						return current_user_can( 'edit_posts' );
+					},
+				),
+			)
+		);
+	}
+
+	/**
+	 * Save the API key.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_Error|\WP_HTTP_Response|\WP_REST_Response
+	 */
+	public function save_api_key( $request ) {
+		$body = $request->get_body();
+		$body = json_decode( $body, true );
+
+		if ( ! is_array( $body ) || ! isset( $body['api_key'] ) ) {
+			return new \WP_Error( 'rest_invalid_json', __( 'API key is missing.', 'otter-blocks' ), array( 'status' => 400 ) );
+		}
+
+		$api_key = sanitize_text_field( $body['api_key'] );
+
+		if ( empty( $api_key ) ) {
+			delete_option( 'themeisle_open_ai_api_key' );
+			return new \WP_REST_Response( array( 'message' => __( 'API key saved.', 'otter-blocks' ) ), 200 );
+		}
+
+		// gpt-3.5-turbo shuts down on 2026-10-23; validate with its replacement.
+		$validation_model = Otter_OpenAI_Backend::get_key_validation_model();
+		$validation_body  = array(
+			'model'    => $validation_model,
+			'messages' => array(
+				array(
+					'role'    => 'system',
+					'content' => 'You are a helpful assistant.',
+				),
+				array(
+					'role'    => 'user',
+					'content' => 'Hello!',
+				),
+			),
+		);
+
+		// GPT-5.6 models reason by default (`medium`); a key check needs none.
+		if ( Otter_OpenAI_Backend::supports_reasoning_effort_none( $validation_model ) ) {
+			$validation_body['reasoning_effort'] = 'none';
+		}
+
+		$response = wp_remote_post(
+			self::BASE_URL,
+			array(
+				'method'  => 'POST',
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $api_key,
+					'Content-Type'  => 'application/json',
+				),
+				'body'    => wp_json_encode( $validation_body ),
+				'timeout' => 2 * MINUTE_IN_SECONDS,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return new \WP_Error(
+				$response->get_error_code(),
+				$response->get_error_message(),
+				array( 'status' => 502 )
+			);
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$body = json_decode( $body );
+
+		if ( json_last_error() !== JSON_ERROR_NONE && ! is_object( $body ) ) {
+			return new \WP_Error( 'rest_invalid_json', __( 'Could not parse the response from OpenAI. Try again.', 'otter-blocks' ), array( 'status' => 502 ) );
+		}
+
+		if ( isset( $body->error ) ) {
+			$status  = wp_remote_retrieve_response_code( $response );
+			$status  = 400 <= $status ? $status : 502;
+			$code    = isset( $body->error->code ) ? $body->error->code : 'unknown_error';
+			$message = isset( $body->error->message ) ? $body->error->message : __( 'An error occurred while processing the request.', 'otter-blocks' );
+
+			return new \WP_Error( $code, $message, array( 'status' => $status ) );
+		}
+
+		update_option( 'themeisle_open_ai_api_key', $api_key );
+
+		return new \WP_REST_Response( array( 'message' => __( 'API key saved.', 'otter-blocks' ) ), 200 );
+	}
+
+	/**
+	 * Forward the prompt to OpenAI API.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_Error|\WP_HTTP_Response|\WP_REST_Response
+	 */
+	public function forward_prompt( $request ) {
+		// Get the body from request and decode it.
+		$body = $request->get_body();
+		$body = json_decode( $body, true );
+
+		if ( ! is_array( $body ) ) {
+			return new \WP_Error( 'rest_invalid_json', __( 'Invalid prompt request body.', 'otter-blocks' ), array( 'status' => 400 ) );
+		}
+
+		// Extract the data from keys that start with 'otter_'.
+		$otter_data = array_filter(
+			$body,
+			function ( $key ) {
+				return 0 === strpos( $key, 'otter_' );
+			},
+			ARRAY_FILTER_USE_KEY
+		);
+
+		// Remove the values which keys start with 'otter_'.
+		$body = array_diff_key( $body, $otter_data );
+
+		$backend = AI_Backend_Resolver::resolve();
+
+		$timeout = AI_Client_Adaptor::get_request_timeout_seconds();
+
+		$raise_timeout = static function ( $args ) use ( $timeout ) {
+			$current = isset( $args['timeout'] ) ? (int) $args['timeout'] : 0;
+			if ( $current < $timeout ) {
+				$args['timeout'] = $timeout;
+			}
+			return $args;
+		};
+
+		// Scope the raised timeout to just this generation request. A long timeout is
+		// intentional here: AI generation runs in a dedicated REST request, not a
+		// page load, and reasoning models can take well over the 30s default.
+		add_filter( 'http_request_args', $raise_timeout, 100 ); // phpcs:ignore WordPressVIPMinimum.Hooks.RestrictedHooks.http_request_args
+
+		try {
+			$result = $backend->generate( $body );
+		} finally {
+			remove_filter( 'http_request_args', $raise_timeout, 100 );
+		}
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		if ( ! AI_Response::is_valid( $result ) ) {
+			return AI_Response::error( 'invalid_backend_response', __( 'The AI backend returned an invalid response.', 'otter-blocks' ), 'otter', 502 );
+		}
+
+		$this->record_prompt_usage( $otter_data );
+
+		return new \WP_REST_Response( $result, 200 );
+	}
+
+	/**
+	 * Get prompts.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_Error|\WP_HTTP_Response|\WP_REST_Response
+	 */
+	public function get_prompts( $request ) {
+		$response = array(
+			'prompts' => array(),
+			'code'    => '0',
+			'error'   => '',
+		);
+
+		// Get the saved prompts.
+		$prompts = get_transient( $this->transient_prompts );
+
+		if ( false === $prompts ) {
+			/**
+			 * If we don't have the prompts saved, we need to retrieve them from the server. Once retrieved, we save them in a transient and return them.
+			 */
+			$response = $this->retrieve_prompts_from_server();
+		}
+
+		if ( '0' === $response['code'] ) {
+			if ( $request->get_param( 'name' ) !== null ) {
+				$prompts = ! empty( $prompts ) ? $prompts : $response['prompts'];
+
+				// Prompt can be filtered by name. By filtering by name, we can get only the prompt we need and save some bandwidth.
+				$single_prompt = array_values(
+					array_filter(
+						$prompts,
+						function ( $prompt ) use ( $request ) {
+							return $prompt['otter_name'] === $request->get_param( 'name' );
+						}
+					)
+				);
+
+				if ( empty( $single_prompt ) ) {
+					$response['prompts'] = $prompts;
+					$response['code']    = '1';
+					$response['error']   = __( 'Something went wrong when preparing the data for this feature.', 'otter-blocks' );
+				} else {
+					$response['prompts'] = $single_prompt;
+				}
+			} else {
+				$response['prompts'] = $prompts;
+			}
+		}
+
+
+		return rest_ensure_response( $response );
+	}
+
+	/**
+	 *
+	 * Retrieve prompts from server.
+	 *
+	 * @return array
+	 */
+	public function retrieve_prompts_from_server() {
+
+		if ( false !== get_transient( $this->timeout_transient ) ) {
+			return array(
+				'response' => array(),
+				'code'     => '3',
+				'error'    => __( 'Timeout is active. Please try again in', 'otter-blocks' ) . 5 . __( 'minutes.', 'otter-blocks' ),
+			);
+		}
+
+		$url = add_query_arg(
+			array(
+				'site_url'   => get_site_url(),
+				'license_id' => apply_filters( 'product_otter_license_key', 'free' ),
+				'cache'      => gmdate( 'u' ),
+				'isValid'    => ( AI_Client_Adaptor::is_available() || boolval( get_option( 'themeisle_open_ai_api_key', false ) ) ) ? 'true' : 'false',
+			),
+			'https://api.themeisle.com/templates-cloud/otter-prompts'
+		);
+
+		$response = '';
+
+		if ( function_exists( 'vip_safe_wp_remote_get' ) ) {
+			$response = vip_safe_wp_remote_get( esc_url_raw( $url ) );
+		} else {
+			$response = wp_remote_get( esc_url_raw( $url ) ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.wp_remote_get_wp_remote_get
+		}
+
+		$response = wp_remote_retrieve_body( $response );
+		$response = json_decode( $response, true );
+
+		if ( ! is_array( $response ) || 0 === count( $response ) || ! $this->check_prompt_structure( $response ) ) {
+			set_transient( $this->timeout_transient, '1', 5 * MINUTE_IN_SECONDS );
+			return array(
+				'response' => array(),
+				'code'     => '2',
+				'error'    => __( 'Invalid data from central server. Please try again in', 'otter-blocks' ) . 5 . __( 'minutes.', 'otter-blocks' ),
+			);
+		}
+
+		set_transient( $this->transient_prompts, $response, WEEK_IN_SECONDS );
+
+		return array(
+			'prompts' => $response,
+			'code'    => '0',
+			'error'   => '',
+		);
+	}
+
+	/**
+	 * Check if the prompt structure is valid.
+	 *
+	 * @param mixed $response Response from the server.
+	 * @return bool
+	 */
+	public function check_prompt_structure( $response ) {
+		if ( ! isset( $response ) ) {
+			return false;
+		}
+
+		if ( ! is_array( $response ) ) {
+			return false;
+		}
+
+		if ( 0 === count( $response ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Record prompt usage.
+	 *
+	 * @param array<string, mixed> $otter_metadata The client-supplied metadata from the prompt usage request.
+	 * @return void
+	 */
+	private function record_prompt_usage( $otter_metadata ) {
+		if ( ! isset( $otter_metadata['otter_used_action'] ) || ! isset( $otter_metadata['otter_user_content'] ) ) {
+			return;
+		}
+
+		$action       = $otter_metadata['otter_used_action'];
+		$user_content = $otter_metadata['otter_user_content'];
+
+		AI_Usage::record( $action, $user_content );
+	}
+
+
+	/**
+	 * The instance method for the static class.
+	 * Defines and returns the instance of the static class.
+	 *
+	 * @static
+	 * @since 1.7.0
+	 * @access public
+	 * @return Prompt_Server
+	 */
+	public static function instance() {
+		if ( is_null( self::$instance ) ) {
+			self::$instance = new self();
+			self::$instance->init();
+		}
+
+		return self::$instance;
+	}
+
+	/**
+	 * Throw error on object clone
+	 *
+	 * The whole idea of the singleton design pattern is that there is a single
+	 * object therefore, we don't want the object to be cloned.
+	 *
+	 * @access public
+	 * @since 1.7.0
+	 * @return void
+	 */
+	public function __clone() {
+		// Cloning instances of the class is forbidden.
+		_doing_it_wrong( __FUNCTION__, esc_html__( 'Cheatin&#8217; huh?', 'otter-blocks' ), '1.0.0' );
+	}
+
+	/**
+	 * Disable unserializing of the class
+	 *
+	 * @access public
+	 * @since 1.7.0
+	 * @return void
+	 */
+	public function __wakeup() {
+		// Unserializing instances of the class is forbidden.
+		_doing_it_wrong( __FUNCTION__, esc_html__( 'Cheatin&#8217; huh?', 'otter-blocks' ), '1.0.0' );
+	}
+}

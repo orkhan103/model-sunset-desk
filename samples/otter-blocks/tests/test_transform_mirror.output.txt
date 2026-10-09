@@ -1,0 +1,11 @@
+PASS 1 swap+effort+tools
+PASS 2 temperature dropped
+PASS 3 gpt-5-mini untouched, max_tokens renamed
+PASS 4 o-series source keeps model default effort
+PASS 5 swap disabled
+PASS 6 keep sampling
+PASS 7 effort omitted
+PASS 8 explicit effort kept
+PASS 9 supports none
+PASS 10 existing tools left alone
+10 checks, 0 failed

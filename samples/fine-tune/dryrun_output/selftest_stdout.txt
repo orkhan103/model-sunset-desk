@@ -1,0 +1,19 @@
+self-test (eval_harness.py, written 2026-10-09 (AI-assisted, human-reviewed))
+  strict JSON parses                                           ok
+  fenced JSON: strict fails, lenient parses                    ok
+  JSON inside prose: lenient parses                            ok
+  empty text: no parse                                         ok
+  schema: valid object                                         ok
+  schema: enum, pattern, extra key, missing key all caught     ok
+  schema: bool is not integer                                  ok
+  scoring: field match ignores case; schema enum does not      ok
+  scoring: refusal detected from text                          ok
+  scoring: refusal field -> refusal, not also empty            ok
+  scoring: truncation + empty                                  ok
+  bootstrap: identical systems give delta 0, CI [0, 0]         ok
+  macro-F1 on toy case = 0.333                                 ok
+  percentile nearest-rank                                      ok
+  live path: POST /v1/chat/completions with bearer auth        ok
+  live path: body has model, 4 messages, response_format, effort, max tokens ok
+  live path: parses content, usage, reasoning tokens, reported model ok
+self-test PASSED
