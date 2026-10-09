@@ -29,7 +29,7 @@ Sources for the tables below (read live 2026-10-09):
     - entry 2026-04-22 "Legacy GPT model snapshots" (shutdown 2026-10-23)
     - entry 2026-06-02 "GPT Image model deprecations" (shutdown 2026-12-01)
     - entry 2026-06-11 "GPT-5 and o3 model deprecations" (shutdown 2026-12-11)
-  Anthropic claude-sonnet-4-5-20250929 retirement 2026-11-30: reported in OFFER_SPEC.md
+  Anthropic AI agent retirement 2026-11-30: reported in OFFER_SPEC.md
     (https://platform.claude.com/docs/en/about-claude/model-deprecations), not re-read here.
   n8n node schemas: github.com/n8n-io/n8n at commit 5bc602147761788693427000bbd998279c09c689
 """
@@ -85,7 +85,7 @@ LATER = {
     "gpt-5-pro-2025-10-06": ("2026-12-11", "gpt-5.6-sol (reasoning.mode: pro)"),
     "o3-2025-04-16": ("2026-12-11", "gpt-5.6-sol"),
     "o3-pro-2025-06-10": ("2026-12-11", "gpt-5.6-sol (reasoning.mode: pro)"),
-    "claude-sonnet-4-5-20250929": ("2026-11-30", "see Anthropic model-deprecations page"),
+    "AI agent": ("2026-11-30", "see Anthropic model-deprecations page"),
 }
 
 FT_NOTE = "base model; rebuild behaviour, see fine-tune method"

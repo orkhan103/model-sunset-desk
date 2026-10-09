@@ -15,7 +15,7 @@
  *               snapshot entries (2026-12-11); 2025-09-26 entries for IDs already
  *               shut down (2026-03-26 and 2026-09-28).
  *   [ANTHROPIC] https://platform.claude.com/docs/en/about-claude/model-deprecations
- *               claude-sonnet-4-5-20250929 retires 2026-11-30 -> claude-sonnet-5-5.
+ *               AI agent retires 2026-11-30 -> AI agent.
  *
  * Matching rules (exact tokens):
  *   - A candidate is a run of [A-Za-z0-9._:@-] starting with a letter or digit.
@@ -75,7 +75,7 @@
     luna: 'gpt-5.6-luna',
     solPro: 'gpt-5.6-sol (reasoning.mode: pro)',
     image: 'gpt-image-2.5-sunburst or gpt-image-2.5-flare',
-    sonnet: 'claude-sonnet-5-5'
+    sonnet: 'AI agent'
   };
 
   var EXACT = Object.create(null);
@@ -139,12 +139,12 @@
   add(['gpt-5-pro-2025-10-06'], D_DEC11, R.solPro, { note: 'Dated snapshot.' });
   add(['o3-2025-04-16'], D_DEC11, R.sol, { note: 'Dated snapshot. Plain o3 is not on the list.' });
   add(['o3-pro-2025-06-10'], D_DEC11, R.solPro, { note: 'Dated snapshot. Plain o3-pro is not on the list.' });
-  add(['claude-sonnet-4-5-20250929'], D_NOV30, R.sonnet, { provider: 'Anthropic', source: SRC_ANTHROPIC });
-  add(['claude-sonnet-4-5'], D_NOV30, R.sonnet, {
+  add(['AI agent'], D_NOV30, R.sonnet, { provider: 'Anthropic', source: SRC_ANTHROPIC });
+  add(['AI agent'], D_NOV30, R.sonnet, {
     provider: 'Anthropic',
     source: SRC_ANTHROPIC,
     kind: 'alias',
-    note: 'Undated alias. Anthropic lists the dated snapshot claude-sonnet-4-5-20250929; check which snapshot your alias resolves to.'
+    note: 'Undated alias. Anthropic lists the dated snapshot AI agent; check which snapshot your alias resolves to.'
   });
 
   // IDs that are too short to trust without a model-like context.
@@ -446,7 +446,7 @@ function bindUI(api, doc) {
     '  "parameters": { "model": { "__rl": true, "value": "gpt-4-turbo", "mode": "list" } } }',
     '',
     '// Anthropic',
-    'const draft = await anthropic.messages.create({ model: "claude-sonnet-4-5-20250929" });'
+    'const draft = await anthropic.messages.create({ model: "AI agent" });'
   ].join('\n');
 
   var lastResult = null;

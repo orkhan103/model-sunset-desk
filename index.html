@@ -97,7 +97,7 @@
 
       <aside class="checker__aside" aria-label="How the checker works">
         <h3>What it flags</h3>
-        <p>Every model ID on OpenAI&rsquo;s 23 Oct 2026 list, with the recommended replacement and date. Fine-tuned models (<code>ft:&hellip;</code>) built on a retiring base. IDs OpenAI has already shut down, such as <code>babbage-002</code>, <code>davinci-002</code> and <code>gpt-3.5-turbo-instruct</code> (28 Sep 2026) or <code>gpt-4-turbo-preview</code> (26 Mar 2026), because calls to them fail now. Items with later dates: Evals and reusable prompts (30 Nov), older image models (1 Dec), dated GPT-5 and o3 snapshots (11 Dec), and Anthropic&rsquo;s <code>claude-sonnet-4-5-20250929</code> (30 Nov).</p>
+        <p>Every model ID on OpenAI&rsquo;s 23 Oct 2026 list, with the recommended replacement and date. Fine-tuned models (<code>ft:&hellip;</code>) built on a retiring base. IDs OpenAI has already shut down, such as <code>babbage-002</code>, <code>davinci-002</code> and <code>gpt-3.5-turbo-instruct</code> (28 Sep 2026) or <code>gpt-4-turbo-preview</code> (26 Mar 2026), because calls to them fail now. Items with later dates: Evals and reusable prompts (30 Nov), older image models (1 Dec), dated GPT-5 and o3 snapshots (11 Dec), and Anthropic&rsquo;s <code>AI agent</code> (30 Nov).</p>
         <h3>What it leaves alone</h3>
         <p>IDs that are not on those lists, such as <code>gpt-4o</code>, <code>gpt-4o-mini</code>, <code>gpt-4.1</code>, <code>gpt-4.1-mini</code>, <code>o3</code> and <code>gpt-5</code>. It matches whole IDs only, so <code>gpt-4</code> never matches inside <code>gpt-4o</code> or <code>gpt-4.1</code>.</p>
         <h3>What it can&rsquo;t see</h3>
@@ -175,7 +175,7 @@
           <tbody>
             <tr><td class="date">31 Oct 2026</td><td>Existing OpenAI evals become read-only</td><td>OpenAI links a guide to moving to Promptfoo</td><td><a href="https://developers.openai.com/api/docs/deprecations">OpenAI</a></td></tr>
             <tr><td class="date">30 Nov 2026</td><td>OpenAI Evals, Agent Builder and reusable prompts (<code>v1/prompts</code>) shut down</td><td>Agents SDK or ChatGPT Workspace Agents; prompt content moves into your code</td><td><a href="https://developers.openai.com/api/docs/deprecations">OpenAI</a></td></tr>
-            <tr><td class="date">30 Nov 2026</td><td><code>claude-sonnet-4-5-20250929</code> retires</td><td><code>claude-sonnet-5-5</code></td><td><a href="https://platform.claude.com/docs/en/about-claude/model-deprecations">Anthropic</a></td></tr>
+            <tr><td class="date">30 Nov 2026</td><td><code>AI agent</code> retires</td><td><code>AI agent</code></td><td><a href="https://platform.claude.com/docs/en/about-claude/model-deprecations">Anthropic</a></td></tr>
             <tr><td class="date">1 Dec 2026</td><td><code>gpt-image-1-mini</code>, <code>gpt-image-1.5</code>, <code>chatgpt-image-latest</code></td><td><code>gpt-image-2.5-sunburst</code> or <code>gpt-image-2.5-flare</code></td><td><a href="https://developers.openai.com/api/docs/deprecations">OpenAI</a></td></tr>
             <tr><td class="date">11 Dec 2026</td><td>Dated snapshots <code>gpt-5-2025-08-07</code>, <code>gpt-5-mini-2025-08-07</code>, <code>gpt-5-nano-2025-08-07</code>, <code>gpt-5-pro-2025-10-06</code>, <code>o3-2025-04-16</code>, <code>o3-pro-2025-06-10</code></td><td><code>gpt-5.6-sol</code>, <code>-terra</code> or <code>-luna</code> by size</td><td><a href="https://developers.openai.com/api/docs/deprecations">OpenAI</a></td></tr>
           </tbody>
@@ -259,7 +259,7 @@
 
     <div class="offers__foot">
       <p><strong>Free:</strong> the <a href="#check">exposure checker</a> above, $0, instant, nothing leaves your browser.</p>
-      <p><strong>Also available</strong> (quoted per job): moving off Agent Builder or reusable prompts (<code>v1/prompts</code>) before 30 Nov, and migrating from <code>claude-sonnet-4-5</code> before 30 Nov.</p>
+      <p><strong>Also available</strong> (quoted per job): moving off Agent Builder or reusable prompts (<code>v1/prompts</code>) before 30 Nov, and migrating from <code>AI agent</code> before 30 Nov.</p>
       <p>Payment is by Stripe Payment Link (card). Prices are in USD. Full <a href="terms.html">terms</a>.</p>
     </div>
   </div>
@@ -320,11 +320,11 @@
           <p>The patch for line 144, the regression harness, the test cases and the parameter-diff analysis. Live before/after numbers need an API key. We did not make paid API calls for this sample (budget $0), and the report says so.</p>
         </li>
         <li class="sheet sample">
-          <a class="sample__link" href="samples/n8n/README.md">Sample n8n workflow fix</a>
+          <a class="sample__link" href="samples/n8n/README.html">Sample n8n workflow fix</a>
           <p>A workflow pinned to <code>gpt-3.5-turbo</code>, the fixed export, and notes on what changed and why.</p>
         </li>
         <li class="sheet sample">
-          <a class="sample__link" href="samples/fine-tune/method.md">Fine-tune replacement method</a>
+          <a class="sample__link" href="samples/fine-tune/method.html">Fine-tune replacement method</a>
           <p>How we rebuild a fine-tune&rsquo;s behaviour on the replacement model, and the eval harness design that measures it.</p>
         </li>
       </ul>
@@ -422,7 +422,7 @@
       </details>
       <details>
         <summary>What about Agent Builder, reusable prompts or Claude Sonnet 4.5?</summary>
-        <p>Those have later dates (30 Nov 2026). We can quote a move off Agent Builder or <code>v1/prompts</code>, or a migration from <code>claude-sonnet-4-5</code>, separately. They are not part of the fixed prices above.</p>
+        <p>Those have later dates (30 Nov 2026). We can quote a move off Agent Builder or <code>v1/prompts</code>, or a migration from <code>AI agent</code>, separately. They are not part of the fixed prices above.</p>
       </details>
       <details>
         <summary>Do you have clients or reviews?</summary>

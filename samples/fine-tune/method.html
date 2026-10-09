@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<!-- Model Sunset Desk sample, 2026-10-09 -->
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sample: replacing a retiring fine-tuned model</title><style>
+:root{--fg:#1d2330;--muted:#5b6475;--line:#d9dee7;--bg:#ffffff;--soft:#f5f7fa;--accent:#0f5bd8;--warn:#fff6e0;--warnline:#e5b54a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--soft);color:var(--fg);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+main{max-width:1060px;margin:0 auto;padding:40px 44px 64px;background:var(--bg);min-height:100vh;box-shadow:0 0 0 1px var(--line)}
+h1{font-size:28px;line-height:1.25;margin:0 0 12px;letter-spacing:-.01em}
+h2{font-size:21px;margin:40px 0 12px;padding-top:16px;border-top:1px solid var(--line)}
+h3{font-size:17px;margin:26px 0 8px}
+p{margin:10px 0}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+code{font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+pre{background:#0f1520;color:#dbe2ee;border-radius:8px;padding:14px 16px;overflow:auto;tab-size:4;-moz-tab-size:4;font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+pre code{background:none;border:0;padding:0;color:inherit;font:inherit}
+pre .add{color:#7ee2a8}pre .del{color:#ff9a9a}pre .hunk{color:#8ab4ff}pre .meta{color:#c7a6ff}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--warn);border-left:4px solid var(--warnline);border-radius:4px}
+blockquote p{margin:4px 0}
+table{border-collapse:collapse;width:100%;margin:12px 0 18px;font-size:13.5px;display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+th{background:var(--soft);font-weight:600}
+tr:nth-child(even) td{background:#fbfcfd}
+ul,ol{padding-left:24px}li{margin:4px 0}li>ul,li>ol{margin:4px 0 6px}li>p{margin:6px 0}
+footer{margin-top:40px;color:var(--muted);font-size:13px}
+@media print{body{background:#fff}main{box-shadow:none;padding:0}pre{white-space:pre-wrap}}
+</style></head><body><main>
+<h1 id="method-replacing-a-retiring-fine-tuned-model">Method: replacing a retiring fine-tuned model</h1>
+<p>Produced 2026-10-09 (AI-assisted, human-reviewed) for <strong>Model Sunset Desk</strong> (offer: <strong>Fine-tune Replacement, US$2,500</strong>). AI-assisted, human-reviewed.</p>
+<p>This document describes how we replace a fine-tuned model whose base OpenAI shuts down on 23 Oct 2026 (for example <code>ft:gpt-3.5-turbo-0125:your-org::abc123</code>). It also covers how we prove what the replacement does, using a measured comparison rather than a promise of identical behaviour.</p>
+<p>The sample code (<code>eval_harness.py</code>) and the dry run in section 8 use <strong>synthetic data and a simulated model</strong>. No API calls were made (budget $0).</p>
+<p>Source labels:</p>
+<ul><li><strong>[V]</strong>: read live on 2026-10-09 from the named primary page; copies are kept under <code>launch/_untrusted/openai-docs/</code>.</li><li><strong>[Tested]</strong>: executed here.</li><li><strong>[Unverified]</strong>: not confirmed.</li></ul>
+<p>---</p>
+<h2 id="1-what-we-verified-about-fine-tuning-availability-today">1. What we verified about fine-tuning availability today</h2>
+<p><strong>1. These fine-tunes shut down on 23 Oct 2026.</strong> [V: https://developers.openai.com/api/docs/deprecations, entry 2026-04-22]</p>
+<p>The page's column is headed "Recommended replacement base model":</p>
+<table><thead><tr><th>Fine-tune family</th><th>Recommended replacement base model</th></tr></thead><tbody><tr><td><code>ft-gpt-3.5-turbo</code></td><td><code>gpt-5.6-terra</code></td></tr><tr><td><code>ft-gpt-4</code></td><td><code>gpt-5.6-sol</code></td></tr><tr><td><code>ft-gpt-4.1-nano-2025-04-14</code></td><td><code>gpt-5.6-luna</code></td></tr><tr><td><code>ft-babbage-002</code>, <code>ft-davinci-002</code></td><td><code>gpt-5.6-terra</code></td></tr><tr><td><code>ft-o4-mini-2025-04-16</code></td><td><code>gpt-5.6-terra</code> (listed in the same entry's main table)</td></tr></tbody></table>
+<p><strong>2. The recommended replacements cannot be fine-tuned.</strong> [V: model pages for gpt-5.6-terra, gpt-5.6-sol and gpt-5.6-luna]</p>
+<ul><li>Each page's Features list says <strong>"Fine-tuning: Not supported"</strong>.</li><li>On each page, <code>v1/fine-tuning</code> appears among the *unsupported* endpoints.</li><li><code>v1/chat/completions</code>, <code>v1/responses</code> and <code>v1/batch</code> are supported.</li></ul>
+<p><strong>3. OpenAI is winding down self-serve fine-tuning.</strong> [V: https://developers.openai.com/api/docs/guides/supervised-fine-tuning and the pricing page]</p>
+<p>Both pages carry this notice, verbatim:</p>
+<blockquote><p>"OpenAI is winding down the fine-tuning platform. The platform is no longer accessible to new users, but existing users of the fine-tuning platform will be able to create training jobs for the coming months. All fine-tuned models will remain available for inference until their base models are deprecated."</p></blockquote>
+<p>The deprecations page section "Update to OpenAI's self-serve fine-tuning" gives the timeline [V]:</p>
+<table><thead><tr><th>Date</th><th>Update (verbatim)</th></tr></thead><tbody><tr><td>May 7, 2026</td><td>"Creating fine-tuning jobs or training is not available to organizations that have not previously run fine-tuning."</td></tr><tr><td>July 2, 2026</td><td>"Creating fine-tuning jobs is no longer available to organizations that have not run inference on a fine-tuned model in the past 60 days."</td></tr><tr><td>Jan 6, 2027</td><td>"Active existing customers will no longer be able to create new fine-tuning jobs on this date. Inference on fine-tuned models will be disabled only when the underlying base model is deprecated."</td></tr></tbody></table>
+<p><strong>4. Which base models can still be fine-tuned, by eligible existing customers only.</strong> [V: model-optimization guide, "Fine-tuning methods" table]</p>
+<table><thead><tr><th>Method</th><th>Base models listed</th></tr></thead><tbody><tr><td>Supervised fine-tuning and DPO</td><td><code>gpt-4.1-2025-04-14</code>, <code>gpt-4.1-mini-2025-04-14</code>, <code>gpt-4.1-nano-2025-04-14</code></td></tr><tr><td>Vision fine-tuning</td><td><code>gpt-4o-2024-08-06</code></td></tr><tr><td>Reinforcement fine-tuning</td><td><code>o4-mini-2025-04-16</code></td></tr></tbody></table>
+<ul><li>Two of these bases, <code>gpt-4.1-nano-2025-04-14</code> and <code>o4-mini-2025-04-16</code>, are <strong>themselves shut down on 23 Oct</strong>.</li><li>We searched today's deprecations page text for <code>gpt-4.1-2025-04-14</code>, <code>gpt-4.1-mini-2025-04-14</code> and <code>gpt-4o-2024-08-06</code>. None appears, so we found no announced shutdown date for them as of 2026-10-09.</li></ul>
+<p><strong>5. Prices per 1M tokens.</strong> [V: pricing page fine-tuning table, Standard tier, read from the page's embedded table data; model pages]</p>
+<table><thead><tr><th>Model</th><th>Input</th><th>Cached input</th><th>Output</th><th>Training</th></tr></thead><tbody><tr><td>Fine-tuned gpt-3.5-turbo (Legacy)</td><td>$3.00</td><td>n/a</td><td>$6.00</td><td>$8.00</td></tr><tr><td>Fine-tuned gpt-4.1-mini-2025-04-14</td><td>$0.80</td><td>$0.20</td><td>$3.20</td><td>$5.00</td></tr><tr><td>gpt-5.6-terra (base)</td><td>$2.00</td><td>$0.20</td><td>$12.00</td><td>not fine-tunable</td></tr></tbody></table>
+<p>On reasoning models, reasoning tokens "are billed as output tokens" [V: reasoning guide].</p>
+<p><strong>6. OpenAI's own Evals platform is going away.</strong> It becomes read-only on 31 Oct 2026 and shuts down on 30 Nov 2026 [V: deprecations page, entry 2026-06-03]. Our evaluation therefore runs locally with <code>eval_harness.py</code> and does not depend on OpenAI Evals.</p>
+<p><strong>What this means for an owner of a retiring fine-tune.</strong> Phrased with care:</p>
+<ul><li>You <strong>may not be able to simply retrain</strong> on the recommended replacement. The gpt-5.6 models do not support fine-tuning, and new fine-tuning jobs end for everyone on 6 Jan 2027 (earlier for organizations that have not used a fine-tuned model in the last 60 days).</li><li>An organization that is still eligible *could* retrain on <code>gpt-4.1-2025-04-14</code> or <code>gpt-4.1-mini-2025-04-14</code> as a bridge. That base is not OpenAI's listed replacement, and a future migration would still be needed.</li><li><strong>Our default is to rebuild the behaviour on the recommended base</strong>, using a written specification, structured outputs and few-shot examples, and to measure the result against the old model on held-out data.</li><li>This agrees with, and is more specific than, the April 2026 OpenAI support answer recorded in our offer spec (GPT-5 family not listed for fine-tuning).</li></ul>
+<p>---</p>
+<h2 id="2-overview">2. Overview</h2>
+<pre><code>client training JSONL --prepare--&gt; dedupe -&gt; stratified split
+                                      |-- heldout.jsonl  (frozen, SHA-256 recorded; never used for prompt work)
+                                      |-- dev.jsonl      (all prompt iteration happens here)
+                                      '-- fewshot_pool.jsonl
+old fine-tune on heldout (BEFORE 23 Oct) --&gt; baseline_outputs.jsonl   (recorded once, kept)
+candidate configs (prompt + few-shot + schema + model + effort) --iterate on dev--&gt; best 2-4 configs
+best configs on heldout --&gt; eval_harness.py --&gt; comparison report (metrics, CIs, flips, cost, latency)
+recommended config --&gt; integration PR (+ fallback handling) --&gt; client CI --&gt; client go/no-go</code></pre>
+<p>---</p>
+<h2 id="3-step-1-data-intake-and-held-out-split">3. Step 1: data intake and held-out split</h2>
+<p><strong>What we ask for.</strong> Everything goes through a channel the client chooses; we need no production access and no passwords.</p>
+<ol><li>The training JSONL used for the fine-tune, plus the validation file if one was used.<ul><li>Chat format is <code>{"messages": [...]}</code> [V: SFT guide].</li><li>The legacy <code>{"prompt","completion"}</code> format (babbage-002/davinci-002 era) is also supported by the tool. [Format from earlier OpenAI docs; not re-verified today]</li></ul></li><li>The fine-tuned model ID and the code or config that calls it: system prompt, parameters, and how the output is parsed.</li><li>A <strong>staging API key from the same OpenAI organization/project that owns the fine-tune</strong>, so the old model can be called for the baseline. The client revokes it after delivery.</li><li>Optionally, 50-200 recent production inputs, with personal data removed. These show where training data and real traffic differ.</li></ol>
+<p><strong>What <code>--prepare</code> does</strong> [Tested on synthetic data; see 8.3]:</p>
+<ul><li>Parses every row. It uses the last user message as <code>input</code> and the last assistant message as <code>expected</code>, parsing the latter as JSON when possible.</li><li>Counts rows it cannot convert, such as tool-call-only rows; those go to manual review.</li><li>Removes exact duplicates on normalised input, and lists duplicates whose labels conflict. Conflicts are label noise and must be resolved with the client before scoring.</li><li>Splits deterministically and stratified by the label field into <code>heldout</code> (default 20%), <code>fewshot_pool</code> (default 10%) and <code>dev</code> (the rest). Each row records which split it went to, plus the seed, in a <code>_provenance</code> field; the harness ignores that field.</li><li>Writes <code>split_manifest.json</code> with SHA-256 hashes of the source file and each split file. The held-out set is <strong>frozen</strong> at this point.</li><li>Extracts the most common system prompt into <code>system_prompt_from_training.json</code> as a starting point.</li></ul>
+<p><strong>How big the held-out set should be.</strong></p>
+<ul><li>Aim for <strong>at least 100 held-out examples, and at least 20-30 per important class</strong>, where the data allows.</li><li>The dry run in section 8 has n=20, and its 95% interval for the change in label accuracy spans 40 points. That interval is far too wide to decide anything, and shows why size matters.</li></ul>
+<p><strong>Recording the baseline must happen before 23 Oct.</strong></p>
+<ul><li>We run the <strong>old fine-tune</strong> on the held-out set once and save its raw outputs, with the model name the API reports, as <code>baseline_outputs.jsonl</code>.</li><li>After the shutdown this is impossible. The comparison would then fall back to the training labels only, which says how well each system matches the labels, but not how the new one differs from what users saw before.</li></ul>
+<p><strong>Data handling.</strong> Client data is used only for the engagement and deleted within 7 days of delivery.</p>
+<p>---</p>
+<h2 id="4-step-2-rebuilding-the-behaviour">4. Step 2: rebuilding the behaviour</h2>
+<ol><li><strong>Write the output contract.</strong><ul><li>Derive a JSON schema from the training outputs: every field, its type, enums for categorical fields, and when values are null.</li><li>Use it with <strong>Structured Outputs</strong> (<code>response_format: {"type": "json_schema", "strict": true}</code>). Verified constraints [V: structured-outputs guide]:</li><li>the root must be an object, not <code>anyOf</code>;</li><li>all fields must be listed in <code>required</code>;</li><li><code>additionalProperties: false</code>;</li><li>optional fields are emulated with a union type with <code>null</code>;</li><li><code>pattern</code> and <code>format</code> are supported for strings.</li></ul></li><li><strong>Write the specification the fine-tune learned implicitly.</strong><ul><li>Start from the training system prompt.</li><li>Add label definitions and decision rules for the pairs that are easy to confuse (we find them by sampling training rows per class and from dev-set errors), plus rules for edge cases: multiple IDs, other languages, sarcasm, instructions embedded in the input.</li></ul></li><li><strong>Choose few-shot examples, only from <code>fewshot_pool.jsonl</code>.</strong><ul><li>Start with one or two per class.</li><li>Add hard cases found on dev, but never anything from held-out.</li><li>Few-shot examples raise prompt tokens on every call. That is a real cost difference from a fine-tune, which needed only a short prompt; the dry-run token rows show the mechanism with simulated counts.</li><li>Keep the static part (system prompt + examples) first, so repeated prefixes can use cached-input pricing ($0.20 vs $2.00 per 1M on gpt-5.6-terra [V]).</li></ul></li><li><strong>Choose the model and reasoning effort.</strong><ul><li>Start on OpenAI's listed replacement base: terra for <code>ft-gpt-3.5-turbo</code>, <code>ft-babbage-002</code>, <code>ft-davinci-002</code> and <code>ft-o4-mini</code>; sol for <code>ft-gpt-4</code>; luna for <code>ft-gpt-4.1-nano</code>.</li><li>Sweep <code>reasoning_effort</code> on dev. gpt-5.6-terra supports none, low, medium (default), high, xhigh and max [V].</li><li>Set <code>max_completion_tokens</code> with headroom. Reasoning tokens count toward it, and a low cap can produce an empty answer that still costs money [V: reasoning guide].</li><li>Do not send <code>temperature</code>/<code>top_p</code> unless tested. OpenAI documents that GPT-6 rejects them when reasoning effort is not none; for GPT-5.6 this is [Unverified].</li></ul></li><li><strong>Iterate on dev only.</strong><ul><li>Each candidate gets a named config file, so the report can say exactly what was tried.</li><li>Two to four finalists go to held-out once.</li></ul></li><li><strong>Optional bridge arm.</strong> Only for clients still eligible to fine-tune, and only if they ask: retrain on <code>gpt-4.1-mini-2025-04-14</code> and score it on the same held-out set. Training is billed to the client's OpenAI account.</li></ol>
+<p>---</p>
+<h2 id="5-step-3-evaluation-design-what-eval-harness-py-computes">5. Step 3: evaluation design (what <code>eval_harness.py</code> computes)</h2>
+<p>All metrics are computed over <strong>all</strong> held-out examples. Failures count against the system; nothing is quietly dropped.</p>
+<table><thead><tr><th>Metric</th><th>Definition (as implemented)</th></tr></thead><tbody><tr><td>Format validity</td><td>The output is one JSON object (strict parse) <strong>and</strong> passes the output schema (types, enums, pattern, required keys, no extra keys).</td></tr><tr><td>Strict / lenient JSON</td><td>Strict: the whole text is a JSON object. Lenient: also accepts JSON inside code fences or prose. A gap between the two means the integration needs cleanup code.</td></tr><tr><td>Exact match</td><td>Every compared field equals the expected value. Strings are compared trimmed, lower-cased and with whitespace collapsed.</td></tr><tr><td>Field accuracy</td><td>Per field, and the per-example mean across fields.</td></tr><tr><td>Label accuracy, macro-F1</td><td>For the main categorical field. Macro-F1 averages per-class F1, so rare classes count. Per-class precision and recall are in the JSON report.</td></tr><tr><td>Refusal rate</td><td>The API <code>refusal</code> field is set, or a non-JSON answer matches the configured refusal phrases.</td></tr><tr><td>Empty or truncated</td><td><code>finish_reason == "length"</code>, or no text and no refusal.</td></tr><tr><td>Cost</td><td><code>(prompt - cached) x input price + cached x cached price + completion x output price</code>, from the token usage the API reports. Completion tokens include reasoning tokens. Reported per 1,000 requests.</td></tr><tr><td>Latency</td><td>Wall-clock per call: p50, p95 (nearest rank) and max.</td></tr><tr><td>Candidate minus baseline</td><td>Paired bootstrap (default 2,000 resamples, fixed seed) of the difference in label accuracy, mean field accuracy and exact match, with 95% intervals.</td></tr><tr><td>Flips</td><td>Example IDs the baseline got right and the candidate got wrong ("regressions"), and the reverse ("fixes"). We read every regression by hand.</td></tr><tr><td>Provenance</td><td>Every output row stores the model name the API reported. The report prints it next to the configured model, so a silent model change is visible.</td></tr></tbody></table>
+<p>We run the finalists twice to show run-to-run variation, and report both runs.</p>
+<p>---</p>
+<h2 id="6-acceptance-criteria-a-measured-comparison-not-parity">6. Acceptance criteria: a measured comparison, not parity</h2>
+<p>We do <strong>not</strong> promise the replacement will match the old fine-tune. Before work starts, the scope paragraph fixes:</p>
+<ol><li>the held-out set, with its SHA-256;</li><li>the metrics above;</li><li>the client's <strong>own go/no-go thresholds</strong>, for example:<ul><li>"format validity at least 99%";</li><li>"lower 95% bound of label-accuracy change at least -2 points";</li><li>"refusal rate at most 1%";</li><li>"cost at most $X per 1k requests";</li><li>"p95 latency at most Y ms".</li></ul></li></ol>
+<p><strong>The delivery is accepted when:</strong></p>
+<ol><li>the comparison report covers every agreed metric for the baseline and for each finalist on the frozen held-out set, and states for each client threshold whether it was <strong>MET or NOT MET</strong>, with the measured value;</li><li>the client can reproduce the numbers by running <code>eval_harness.py</code> with the delivered config, the held-out file and their key, within the run-to-run variation the report shows;</li><li>the integration PR implements the recommended config (schema validation, handling of empty, truncated and refused answers, and the model name logged per call) and passes the client's CI.</li></ol>
+<p>Whether the measured result is good enough to ship is the <strong>client's decision</strong>. If thresholds are not met, the report says so plainly and lists the remaining error types and what further work could address them.</p>
+<p><strong>Price and terms.</strong> Fine-tune Replacement costs <strong>US$2,500</strong>: $1,250 deposit to start (the Payment Link is emailed after the one-paragraph scope is agreed) and $1,250 on delivery of the comparison report (link sent with the report).</p>
+<ul><li>The deposit is refunded in full if work has not started.</li><li>If we miss the agreed delivery date, the client may cancel and get the deposit back.</li><li>Liability is capped at the fee paid. No guarantee of parity, quality or uptime.</li></ul>
+<p>---</p>
+<h2 id="7-timeline-3-5-business-days">7. Timeline: 3-5 business days</h2>
+<table><thead><tr><th>Day</th><th>Work</th><th>Client needs to provide</th></tr></thead><tbody><tr><td>0</td><td>One-paragraph scope and acceptance test agreed; deposit paid</td><td>Training JSONL, fine-tuned model ID, call code, staging key</td></tr><tr><td>1</td><td>Intake, dedupe, split, held-out frozen; <strong>baseline recorded on the old fine-tune</strong></td><td>Answers to label-conflict questions</td></tr><tr><td>2</td><td>Output contract and schema; specification; few-shot selection; first dev runs; effort sweep</td><td>-</td></tr><tr><td>3</td><td>Dev iteration; finalists run on held-out (twice); comparison report drafted</td><td>-</td></tr><tr><td>4</td><td>Integration PR with schema validation, fallback handling and model logging</td><td>CI run, review</td></tr><tr><td>5</td><td>Buffer, report delivered, walkthrough</td><td>Go/no-go decision</td></tr></tbody></table>
+<p>The 3-day track merges days 2-3 and 4-5 for small, single-output tasks.</p>
+<p><strong>Calendar facts</strong> (not pressure):</p>
+<ul><li>Mon 12 Oct 2026 is a bank holiday in Canada and the US. The next business day is Tue 13 Oct [V: as recorded in <code>launch/payment-setup.md</code>].</li><li>Calls to the old fine-tune fail from 23 Oct. For the replacement to be in production first:<ul><li>the 5-day track needs work to start by <strong>Thu 15 Oct</strong> (day 5 = Wed 21 Oct);</li><li>the 3-day track needs a start by <strong>Mon 19 Oct</strong> (day 3 = Wed 21 Oct).</li><li>Either way, the client deploys on Thu 22 Oct at the latest.</li></ul></li><li>The baseline recording on day 1 needs only hours, but it must happen by <strong>Thu 22 Oct</strong>.</li><li>We take work with a 23 Oct deadline until our calendar is full, and will say so before anyone pays.</li></ul>
+<p>---</p>
+<h2 id="8-the-dry-run-synthetic-data-simulated-model">8. The dry run (synthetic data, simulated model)</h2>
+<p><strong>What is bundled</strong> (<code>sample_data/</code>, rebuilt by <code>build_sample_data.py</code>, which is deterministic):</p>
+<ul><li><code>synthetic_eval.jsonl</code>: 20 invented customer e-mails to a fictional small tea shop, each with expected <code>{intent, order_id, product, sentiment, needs_human}</code>. Hard cases are included on purpose: a French message (syn-14), two order IDs (syn-15), sarcasm (syn-16) and a prompt-injection attempt (syn-13).</li><li><code>candidate_config.json</code>: a rebuilt system prompt, 6 few-shot examples that are <strong>not</strong> in the eval set, a strict JSON schema, <code>gpt-5.6-terra</code> with <code>reasoning_effort: low</code>, verified list prices, and <strong>example</strong> thresholds.</li><li><code>baseline_outputs_simulated.jsonl</code>: invented "recordings" of an old fine-tune, mostly right, with three planted mistakes (syn-14, syn-15, syn-16).</li><li><code>synthetic_finetune_train.jsonl</code>: the same examples in OpenAI chat fine-tuning format, plus one duplicate, for the <code>--prepare</code> demo.</li></ul>
+<p><strong>What is simulated.</strong></p>
+<ul><li>The candidate is a <strong>rule-based stand-in</strong> (keyword rules), not a model. Two failure modes are injected so that every metric shows up: syn-07 hits the token cap with an empty answer, and syn-13 is a refusal.</li><li>Token counts are estimated from text length, reasoning tokens are invented, and latency is derived from token counts.</li><li><strong>None of these numbers say anything about gpt-5.6-terra or any other model.</strong></li><li>What they do show: the report's structure, the metrics, the confidence intervals, the flip lists and the threshold checks all work end to end.</li></ul>
+<h3 id="8-1-python3-i-eval-harness-py-dry-run-tested-2026-10-09">8.1 <code>python3 -I eval_harness.py --dry-run</code> [Tested 2026-10-09]</h3>
+<pre><code>==============================================================================
+FINE-TUNE REPLACEMENT EVALUATION REPORT
+harness: eval_harness.py, written 2026-10-09 (AI-assisted, human-reviewed)
+run at: 2026-10-09 12:56:54 EDT   mode: dry-run
+*** DRY RUN: synthetic data, SIMULATED candidate and SIMULATED baseline. ***
+*** These numbers test the harness. They are NOT measurements of any model. ***
+data: sample_data/synthetic_eval.jsonl (20 examples, sha256 c9bc9db09818...)
+candidate config: candidate-A: rebuilt system prompt + 6 few-shot + strict JSON schema
+candidate model (config): gpt-5.6-terra | models reported by outputs: SIMULATOR (rule-based stand-in; no model was called)
+baseline: old fine-tune ft:gpt-3.5-turbo-0125:example-org::SIMULATED (recorded outputs) | models reported: ft:gpt-3.5-turbo-0125:example-org::SIMULATED
+------------------------------------------------------------------------------
+metric                                           baseline          candidate
+format valid (strict JSON + schema)                100.0%              90.0%
+strict JSON parse                                  100.0%              90.0%
+lenient JSON parse (fences/prose)                  100.0%              90.0%
+exact match (all fields)                            85.0%              75.0%
+mean field accuracy                                 95.0%              86.0%
+label accuracy                                      95.0%              85.0%
+label macro-F1                                      93.2%              91.9%
+refusal rate                                         0.0%               5.0%
+empty or truncated                                   0.0%               5.0%
+latency p50 (ms)                                      531               1675
+latency p95 (ms)                                      678               2172
+latency max (ms)                                      679              24735
+cost per 1k requests                              $0.3949            $5.3385
+tokens: prompt / completion                    1517 / 558       11757 / 6938
+  of which reasoning tokens                             0               6413
+------------------------------------------------------------------------------
+per-field accuracy:
+  intent               baseline    95.0%   candidate    85.0%
+  order_id             baseline    95.0%   candidate    85.0%
+  product              baseline    95.0%   candidate    90.0%
+  sentiment            baseline    95.0%   candidate    80.0%
+  needs_human          baseline    95.0%   candidate    90.0%
+------------------------------------------------------------------------------
+candidate minus baseline, paired bootstrap 95% CI (2000 resamples, seed 20261009, n=20):
+  label_accuracy                 -10.0 pts   [-30.0, +10.0]
+  field_accuracy_mean             -9.0 pts   [-25.0, +2.0]
+  exact_match_rate               -10.0 pts   [-30.0, +10.0]
+  label regressions (baseline right, candidate wrong): syn-07, syn-13, syn-16
+  label fixes (baseline wrong, candidate right):       syn-14
+  exact-match regressions: syn-01, syn-07, syn-13
+  exact-match fixes:       syn-14
+------------------------------------------------------------------------------
+client-agreed thresholds (measured comparison; meeting them is not guaranteed):
+  format_valid_rate_min              &gt;= 0.99    measured 0.9000       NOT MET
+  label_accuracy_delta_ci_low_min    &gt;= -0.05   measured -0.3000      NOT MET
+  field_accuracy_delta_ci_low_min    &gt;= -0.05   measured -0.2500      NOT MET
+  refusal_rate_max                   &lt;= 0.02    measured 0.0500       NOT MET
+  empty_or_truncated_rate_max        &lt;= 0.01    measured 0.0500       NOT MET
+  cost_per_1k_requests_max_usd       &lt;= 10.0    measured 5.3385       MET
+  latency_p95_max_ms                 &lt;= 4000    measured 2172         MET
+------------------------------------------------------------------------------
+candidate problem cases:
+  syn-01     wrong fields: sentiment
+  syn-07   truncated, empty  wrong fields: intent, order_id, product, sentiment, needs_human
+  syn-13   refusal  wrong fields: intent, order_id, product, sentiment, needs_human
+  syn-15     wrong fields: order_id
+  syn-16     wrong fields: intent, sentiment
+==============================================================================</code></pre>
+<p><strong>How to read it, as if these were real numbers.</strong></p>
+<ul><li>The candidate's mean differences are negative, but with n=20 every 95% interval is very wide; label accuracy runs from -30 to +10 points. This size of set cannot separate the two systems, which is why we ask for at least 100 held-out examples.</li><li><strong>Regressions to read by hand:</strong><ul><li>syn-07: a truncated answer that used the whole 4,000-token budget. It produced the 24.7 s max latency and almost half of the candidate's cost.</li><li>syn-13: a refusal of the injection attempt, where the specification wanted <code>other</code> with <code>needs_human: true</code>.</li><li>syn-16: sarcasm read as a return request.</li></ul></li><li><strong>The fix:</strong> syn-14 (the French message).</li><li><strong>What we would do next on dev:</strong><ul><li>raise <code>max_completion_tokens</code> or lower effort;</li><li>add an injection example to the few-shot set;</li><li>add a sarcasm rule;</li><li>re-run.</li></ul></li><li><strong>The thresholds marked NOT MET are the honest output.</strong> The report never hides them.</li><li><strong>Cost per 1k requests is higher for the candidate</strong> because the prompt carries the specification and examples (about 588 vs 76 prompt tokens per call here), output costs $12 vs $6 per 1M, and reasoning tokens bill as output. The token counts are simulated; the prices are real list prices.</li></ul>
+<h3 id="8-2-python3-i-eval-harness-py-self-test-tested">8.2 <code>python3 -I eval_harness.py --self-test</code> [Tested]</h3>
+<pre><code>self-test (eval_harness.py, written 2026-10-09 (AI-assisted, human-reviewed))
+  strict JSON parses                                           ok
+  fenced JSON: strict fails, lenient parses                    ok
+  JSON inside prose: lenient parses                            ok
+  empty text: no parse                                         ok
+  schema: valid object                                         ok
+  schema: enum, pattern, extra key, missing key all caught     ok
+  schema: bool is not integer                                  ok
+  scoring: field match ignores case; schema enum does not      ok
+  scoring: refusal detected from text                          ok
+  scoring: refusal field -&gt; refusal, not also empty            ok
+  scoring: truncation + empty                                  ok
+  bootstrap: identical systems give delta 0, CI [0, 0]         ok
+  macro-F1 on toy case = 0.333                                 ok
+  percentile nearest-rank                                      ok
+  live path: POST /v1/chat/completions with bearer auth        ok
+  live path: body has model, 4 messages, response_format, effort, max tokens ok
+  live path: parses content, usage, reasoning tokens, reported model ok
+self-test PASSED</code></pre>
+<p>The last three checks run the real live-call code against a local mock server on 127.0.0.1. They confirm the request body (model, messages, <code>response_format</code>, <code>reasoning_effort</code>, <code>max_completion_tokens</code>, no <code>temperature</code>) and the parsing of content, usage, reasoning tokens and the reported model name, without spending money. They do <strong>not</strong> prove compatibility with the real OpenAI API. [Unverified against the live API]</p>
+<h3 id="8-3-prepare-demo-tested">8.3 <code>--prepare</code> demo [Tested]</h3>
+<p><code>python3 -I eval_harness.py --prepare sample_data/synthetic_finetune_train.jsonl --out-dir dryrun_output/prepare_demo</code>:</p>
+<pre><code>source_rows: 27 | exact duplicates removed: 1 | conflicting duplicates: 0 | unique: 26 | skipped: 0
+per label: billing_issue=4, cancel_order=3, order_status=5, other=7, product_question=3, return_request=4
+heldout.jsonl 6 rows (sha256 1ec25985324a4efc...) | dev.jsonl 19 rows | fewshot_pool.jsonl 1 rows
+rule: heldout.jsonl is frozen now: never used for prompt writing or few-shot selection.</code></pre>
+<p>Re-running produced byte-identical split files, so the split is deterministic.</p>
+<p>---</p>
+<h2 id="9-running-it-on-real-data">9. Running it on real data</h2>
+<pre><code># 1. intake and split (records hashes; heldout is frozen from here on)
+python3 -I eval_harness.py --prepare client_train.jsonl --out-dir work/ --label-field &lt;field&gt;
+
+# 2. BEFORE 23 Oct: record the old fine-tune on heldout (config with "model": "ft:...", no schema)
+python3 -I eval_harness.py --data work/heldout.jsonl --config old_ft_config.json --live \
+    --save-outputs work/baseline_outputs.jsonl --max-calls 500
+
+# 3. iterate candidates on dev, then score finalists on heldout against the recorded baseline
+python3 -I eval_harness.py --data work/heldout.jsonl --config candidate_A.json --live \
+    --save-outputs work/candA_run1.jsonl --max-calls 500 \
+    --baseline-outputs work/baseline_outputs.jsonl --report-json work/candA_run1_report.json
+
+# 4. re-score saved outputs at any time without new API calls
+python3 -I eval_harness.py --data work/heldout.jsonl --config candidate_A.json \
+    --candidate-outputs work/candA_run1.jsonl --baseline-outputs work/baseline_outputs.jsonl</code></pre>
+<p>Live mode refuses to run without <code>OPENAI_API_KEY</code>, <code>--save-outputs</code> and a <code>--max-calls</code> cap at least as large as the data. It prints a rough cost ceiling before the first call [Tested: all three refusals].</p>
+<p>---</p>
+<h2 id="10-limits">10. Limits</h2>
+<ul><li>No live API call was made, so nothing here measures any real model. The live path was tested only against a local mock server.</li><li>The tool's legacy prompt/completion format support is based on earlier OpenAI docs and was not re-verified today.</li><li>Fine-tuned models are private to the owning organization, so baseline recording needs a key from that organization.</li><li>Rows that are tool-call-only, or multi-turn with several assistant turns, are counted and set aside by <code>--prepare</code> for manual handling.</li><li>Whether gpt-5.6 models accept <code>temperature</code>/<code>top_p</code> at non-<code>none</code> effort is not documented in the pages we read.</li><li>The thresholds in <code>candidate_config.json</code> are examples; each client sets their own.</li></ul>
+<h2 id="11-sources-all-read-2026-10-09">11. Sources (all read 2026-10-09)</h2>
+<ul><li>Deprecations (2026-04-22 entry; self-serve fine-tuning update; Evals; reusable prompts): https://developers.openai.com/api/docs/deprecations</li><li>Model pages:<ul><li>https://developers.openai.com/api/docs/models/gpt-5.6-terra</li><li>https://developers.openai.com/api/docs/models/gpt-5.6-sol</li><li>https://developers.openai.com/api/docs/models/gpt-5.6-luna</li></ul></li><li>Supervised fine-tuning guide: https://developers.openai.com/api/docs/guides/supervised-fine-tuning</li><li>Model optimization guide (fine-tuning methods table): https://developers.openai.com/api/docs/guides/model-optimization</li><li>Pricing (fine-tuning table): https://developers.openai.com/api/docs/pricing</li><li>Reasoning guide: https://developers.openai.com/api/docs/guides/reasoning</li><li>GPT-6 guide (unsupported-parameter rule): https://developers.openai.com/api/docs/guides/latest-model</li><li>Structured outputs guide: https://developers.openai.com/api/docs/guides/structured-outputs</li><li>Chat Completions API reference (<code>max_completion_tokens</code>, <code>finish_reason</code>, <code>refusal</code>, <code>completion_tokens_details.reasoning_tokens</code>): https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create</li></ul>
+<footer>Model Sunset Desk sample, 2026-10-09</footer></main></body></html>
